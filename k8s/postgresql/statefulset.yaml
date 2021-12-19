@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: datapipe-db
+  namespace: assistent
+  labels:
+    app: datapipe-db
+    project: datapipe
+spec:
+  serviceName: "datapipe-db"
+  replicas:  1
+  selector:
+    matchLabels:
+      app: datapipe-db
+  template:
+    metadata:
+      labels:
+        app: datapipe-db
+        project: datapipe
+    spec:
+      containers:
+      - name: datapipe-db
+        image: postgres:13.1
+        envFrom:
+          - secretRef:
+              name: datapipe-db-secret
+        ports:
+        - containerPort: 5432
+          name: postgredb
+        volumeMounts:
+        - name: postgredb
+          mountPath: /var/lib/postgresql/data
+          subPath: postgres
+  volumeClaimTemplates:
+  - metadata:
+      name: postgredb
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 10Gi
