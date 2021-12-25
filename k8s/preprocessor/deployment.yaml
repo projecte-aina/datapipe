@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: preprocessor
+  labels:
+    app: preprocessor
+    project: datapipe
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: preprocessor
+  template:
+    metadata:
+      labels:
+        app: preprocessor
+        project: datapipe
+    spec:
+      imagePullSecrets:
+      - name: github-registry
+      containers:
+        - name: preprocessor
+          image: ghcr.io/ccoreilly/datapipe:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: [ "python", "-m", "preprocessor" ]
+          env:
+            - name: PG_HOST
+              value: datapipe-db
+            - name: API_URL
+              value: http://text2lang:80/text2lang
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: datapipe-db-secret
+                  key: POSTGRES_PASSWORD

@@ -67,8 +67,8 @@ conn = get_connection()
 
 cur = conn.cursor()
 
+print("Starting")
 while True:
-    print("Starting")
     cur.execute("UPDATE sources SET status='checking_language' \
     WHERE source_id = ( \
     SELECT source_id \

@@ -9,7 +9,7 @@ httpcore==0.14.1
 httpx==0.21.0
 idna==3.3
 protobuf==3.19.1
-psycopg2==2.9.2
+psycopg2-binary==2.9.2
 pycparser==2.21
 pytube==11.0.2
 requests==2.26.0
