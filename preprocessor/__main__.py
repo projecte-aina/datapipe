@@ -1,16 +1,12 @@
 from os import getenv
 from time import sleep
-import psycopg2
 from pytube import YouTube
 
 import json
 import requests
 import traceback
 
-PG_HOST = getenv("PG_HOST", "localhost")
-PG_DATABASE = getenv("PG_DATABASE", "datapipe")
-PG_USERNAME = getenv("PG_USERNAME", "datapipe")
-PG_PASSWORD = getenv("PG_PASSWORD")
+from db import get_connection
 
 API_TOKEN = getenv("API_TOKEN")
 API_URL = getenv("API_URL", "https://api-inference.huggingface.co/models/ivanlau/language-detection-fine-tuned-on-xlm-roberta-base")
@@ -67,7 +63,7 @@ def youtube_license_check(yt):
     return "creative commons" in metadata.lower()
 
 
-conn = psycopg2.connect(f"host={PG_HOST} port=5432 dbname={PG_DATABASE} user={PG_USERNAME} password={PG_PASSWORD}")
+conn = get_connection()
 
 cur = conn.cursor()
 
@@ -108,7 +104,12 @@ while True:
         else:
             print(f"Unknown source type {type}!")
     else:
-        break
+        try:
+            print("No work, sleeping for 10s...")
+            sleep(10)
+        except KeyboardInterrupt:
+            break
+
 
 cur.close()
 conn.close()

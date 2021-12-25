@@ -1,51 +1,78 @@
-from os import getenv
+from os import getenv, path
 from time import sleep
-import psycopg2
 from pytube import YouTube
+import traceback
 
-PG_HOST = getenv("PG_HOST", "localhost")
-PG_DATABASE = getenv("PG_DATABASE", "datapipe")
-PG_USERNAME = getenv("PG_USERNAME", "datapipe")
-PG_PASSWORD = getenv("PG_PASSWORD")
+from db import get_connection
 
-def youtube_download(source_id, url):
-    try:
-        print(f"YT: Fetching {url} (id={source_id})")
-        yt = YouTube(url)
-        stream = yt.streams.filter(only_audio=True).order_by("abr").last()
+DOWLOAD_PATH = getenv("DOWNLOAD_PATH", "./media")
+
+def get_youtube(source_id, url):
+    print(f"YT: Fetching {url} (id={source_id})")
+    return YouTube(url)
+
+def youtube_download_audio(yt):
+    stream = yt.streams.filter(only_audio=True).order_by("abr").last()
+    if stream:
         ext = stream.default_filename.split('.')[-1]
-        stream.download("./media", f"{source_id}.{ext}", None)
-    except Exception as ex:
-        print("Failed to fetch")
+        filename = f"{source_id}.{ext}"
+        stream.download(DOWLOAD_PATH, filename, None)
+        return path.join(DOWLOAD_PATH, filename)
 
 
-conn = psycopg2.connect(f"host={PG_HOST} port=5432 dbname={PG_DATABASE} user={PG_USERNAME} password={PG_PASSWORD}")
+
+
+
+conn = get_connection()
 
 cur = conn.cursor()
 
-cur.execute("UPDATE sources SET status='downloading' \
-WHERE source_id = ( \
-  SELECT source_id \
-  FROM sources \
-  WHERE status='ready_for_download' \
-  ORDER BY source_id  \
-  FOR UPDATE SKIP LOCKED \
-  LIMIT 1 \
-) \
-RETURNING source_id, url, type;")
-conn.commit()
-
 while True:
+    print("Starting")
+    cur.execute("UPDATE sources SET status='downloading' \
+    WHERE source_id = ( \
+    SELECT source_id \
+    FROM sources \
+    WHERE status='ready_for_download' \
+    ORDER BY source_id  \
+    FOR UPDATE SKIP LOCKED \
+    LIMIT 1 \
+    ) \
+    RETURNING source_id, url, type;")
+    conn.commit()
     next = cur.fetchone()
 
     if next:
         source_id, url, type = next
         if type == "youtube":
-            youtube_download(source_id, url)
+            try:
+                yt = get_youtube(source_id, url)
+                audiopath = youtube_download_audio(yt)
+                if audiopath:
+                    print("Fetching succeeded")
+                    cur.execute(f"UPDATE sources SET status='audio_extracted', audiopath='{audiopath}' WHERE source_id = '{source_id}'")
+                else:
+                    print("Fetching failed: no audio")
+                    cur.execute(f"UPDATE sources SET status='error' WHERE source_id = '{source_id}'")
+            except KeyboardInterrupt:
+                print("Stopping")
+                cur.execute(f"UPDATE sources SET status='ready_for_download' WHERE source_id = '{source_id}'")
+                conn.commit()
+                break
+            except Exception as ex:
+                print(f"Preprocessing failed")
+                traceback.print_exc()
+                cur.execute(f"UPDATE sources SET status='ready_for_download' WHERE source_id = '{source_id}'")
+            finally:
+                conn.commit
         else:
             print(f"Unknown source type {type}!")
     else:
-        break
+        try:
+            print("No work, sleeping for 10s...")
+            sleep(10)
+        except KeyboardInterrupt:
+            break
 
 cur.close()
 conn.close()
