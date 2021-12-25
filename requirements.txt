@@ -11,9 +11,11 @@ idna==3.3
 protobuf==3.19.1
 psycopg2==2.9.2
 pycparser==2.21
-pytube==11.0.1
+pytube==11.0.2
+requests==2.26.0
 rfc3986==1.5.0
 six==1.16.0
 sniffio==1.2.0
+urllib3==1.26.7
 vosk==0.3.32
 youtube-search-python==1.5.1
