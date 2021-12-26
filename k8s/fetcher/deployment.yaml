@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fetcher
+  labels:
+    app: fetcher
+    project: datapipe
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: fetcher
+  template:
+    metadata:
+      labels:
+        app: fetcher
+        project: datapipe
+    spec:
+      imagePullSecrets:
+      - name: github-registry
+      volumes:
+      - name: datapipe-storage
+        persistentVolumeClaim:
+          claimName: datapipe-storage
+      containers:
+        - name: fetcher
+          image: ghcr.io/ccoreilly/datapipe:0.2.1
+          imagePullPolicy: IfNotPresent
+          command: [ "python", "-m", "fetcher" ]
+          volumeMounts:
+          - mountPath: /datapipe/
+            name: datapipe-storage
+          env:
+            - name: PG_HOST
+              value: datapipe-db
+            - name: AUDIO_DOWNLOAD_PATH
+              value: /datapipe/audio
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: datapipe-db-secret
+                  key: POSTGRES_PASSWORD

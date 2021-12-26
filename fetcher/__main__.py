@@ -1,11 +1,15 @@
-from os import getenv, path
+from os import getenv, path, remove
 from time import sleep
 from pytube import YouTube
 import traceback
 
 from db import get_connection
 
-DOWLOAD_PATH = getenv("DOWNLOAD_PATH", "./media")
+AUDIO_DOWNLOAD_PATH = getenv("AUDIO_DOWNLOAD_PATH", "./audio")
+
+class FilesizeNotMatching(Exception):
+    """Filesize of downloaded file does not match"""
+    pass
 
 def get_youtube(source_id, url):
     print(f"YT: Fetching {url} (id={source_id})")
@@ -16,12 +20,13 @@ def youtube_download_audio(yt):
     if stream:
         ext = stream.default_filename.split('.')[-1]
         filename = f"{source_id}.{ext}"
-        stream.download(DOWLOAD_PATH, filename, None)
-        return path.join(DOWLOAD_PATH, filename)
-
-
-
-
+        filesize = stream.filesize
+        filepath = path.join(AUDIO_DOWNLOAD_PATH, filename)
+        stream.download(AUDIO_DOWNLOAD_PATH, filename, None)
+        if filesize != path.getsize(filepath):
+            remove(filepath)
+            raise FilesizeNotMatching
+        return filepath
 
 conn = get_connection()
 
@@ -34,7 +39,7 @@ while True:
     SELECT source_id \
     FROM sources \
     WHERE status='ready_for_download' \
-    ORDER BY source_id  \
+    ORDER BY random()  \
     FOR UPDATE SKIP LOCKED \
     LIMIT 1 \
     ) \

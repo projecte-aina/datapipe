@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: converter
+  labels:
+    app: converter
+    project: datapipe
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: converter
+  template:
+    metadata:
+      labels:
+        app: converter
+        project: datapipe
+    spec:
+      imagePullSecrets:
+      - name: github-registry
+      volumes:
+      - name: datapipe-storage
+        persistentVolumeClaim:
+          claimName: datapipe-storage
+      containers:
+        - name: converter
+          image: ghcr.io/ccoreilly/datapipe:0.2.3
+          imagePullPolicy: IfNotPresent
+          command: [ "python", "-m", "converter" ]
+          volumeMounts:
+          - mountPath: /datapipe/
+            name: datapipe-storage
+          env:
+            - name: PG_HOST
+              value: datapipe-db
+            - name: AUDIO_16_PATH
+              value: /datapipe/audio16
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: datapipe-db-secret
+                  key: POSTGRES_PASSWORD

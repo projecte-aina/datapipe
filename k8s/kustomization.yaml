@@ -7,3 +7,5 @@ resources:
   - postgresql
   - storage
   - preprocessor
+  - fetcher
+  - converter
