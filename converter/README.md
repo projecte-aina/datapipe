@@ -1,3 +1,3 @@
-# Preprocessor
+# Converter
 
-Checks the language and license of sources.
+Converts audio to 16kHz wav mono

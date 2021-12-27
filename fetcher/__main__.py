@@ -52,8 +52,8 @@ while not killer.kill_now:
 
     if next:
         source_id, url, type = next
-        if type == "youtube":
-            try:
+        try:
+            if type == "youtube":
                 yt = get_youtube(source_id, url)
                 audiopath = youtube_download_audio(yt)
                 if audiopath:
@@ -62,19 +62,19 @@ while not killer.kill_now:
                 else:
                     print("Fetching failed: no audio")
                     cur.execute(f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
-            except KeyboardInterrupt:
-                print("Stopping")
-                cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
-                conn.commit()
-                break
-            except Exception as ex:
-                print(f"Preprocessing failed")
-                traceback.print_exc()
-                cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
-            finally:
-                conn.commit
-        else:
-            print(f"Unknown source type {type}!")
+            else:
+                print(f"Unknown source type {type}!")
+        except KeyboardInterrupt:
+            print("Stopping")
+            cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
+            conn.commit()
+            break
+        except Exception as ex:
+            print(f"Preprocessing failed")
+            traceback.print_exc()
+            cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
+        finally:
+            conn.commit
     else:
         try:
             print("No work, sleeping for 10s...")

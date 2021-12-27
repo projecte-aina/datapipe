@@ -25,7 +25,7 @@ spec:
       volumes:
       - name: datapipe-storage
         persistentVolumeClaim:
-          claimName: datapipe-storage
+          claimName: datapipe-storage-local
       containers:
         - name: fetcher
           image: ghcr.io/ccoreilly/datapipe:0.3.0
