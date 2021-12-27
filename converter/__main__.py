@@ -5,6 +5,9 @@ from pydub import AudioSegment
 import traceback
 
 from db import get_connection
+from utils import GracefulKiller
+
+killer = GracefulKiller()
 
 AUDIO_16_PATH = getenv("AUDIO_16_PATH", "./audio16")
 
@@ -31,8 +34,8 @@ conn = get_connection()
 cur = conn.cursor()
 
 print("Starting")
-while True:
-    cur.execute("UPDATE sources SET status='audio_converting' \
+while not killer.kill_now:
+    cur.execute("UPDATE sources SET status='audio_converting', status_update=now() \
     WHERE source_id = ( \
     SELECT source_id \
     FROM sources \
@@ -49,16 +52,16 @@ while True:
         source_id, audiopath = next
         try:
             sr, duration, audiopath16 = convert(source_id, audiopath)
-            cur.execute(f"UPDATE sources SET sr='{sr}', duration='{duration}', audiopath_16='{audiopath16}' WHERE source_id = '{source_id}'")
+            cur.execute(f"UPDATE sources SET sr='{sr}', duration='{duration}', audiopath_16='{audiopath16}', status='audio_converted', status_update=now() WHERE source_id = '{source_id}'")
         except KeyboardInterrupt:
             print("Stopping")
-            cur.execute(f"UPDATE sources SET status='audio_extracted' WHERE source_id = '{source_id}'")
+            cur.execute(f"UPDATE sources SET status='audio_extracted', status_update=now() WHERE source_id = '{source_id}'")
             conn.commit()
             break
         except Exception as ex:
             print(f"Preprocessing failed")
             traceback.print_exc()
-            cur.execute(f"UPDATE sources SET status='audio_extracted' WHERE source_id = '{source_id}'")
+            cur.execute(f"UPDATE sources SET status='audio_extracted', status_update=now() WHERE source_id = '{source_id}'")
         finally:
             conn.commit
     else:

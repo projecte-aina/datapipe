@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: preprocessor
+  name: debug
   labels:
-    app: preprocessor
+    app: debug
     project: datapipe
 spec:
   replicas: 1
@@ -13,20 +13,26 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: preprocessor
+      app: debug
   template:
     metadata:
       labels:
-        app: preprocessor
+        app: debug
         project: datapipe
     spec:
-      imagePullSecrets:
-      - name: github-registry
+      volumes:
+      - name: datapipe-storage
+        persistentVolumeClaim:
+          claimName: datapipe-storage
       containers:
-        - name: preprocessor
+        - name: debug
           image: ghcr.io/ccoreilly/datapipe:0.3.0
           imagePullPolicy: IfNotPresent
-          command: [ "python", "-m", "preprocessor" ]
+          command: [ "sleep" ]
+          args: ["infinity"]
+          volumeMounts:
+          - mountPath: /datapipe/
+            name: datapipe-storage
           env:
             - name: PG_HOST
               value: datapipe-db

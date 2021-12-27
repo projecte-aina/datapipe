@@ -4,6 +4,9 @@ from pytube import YouTube
 import traceback
 
 from db import get_connection
+from utils import GracefulKiller
+
+killer = GracefulKiller()
 
 AUDIO_DOWNLOAD_PATH = getenv("AUDIO_DOWNLOAD_PATH", "./audio")
 
@@ -33,8 +36,8 @@ conn = get_connection()
 cur = conn.cursor()
 
 print("Starting")
-while True:
-    cur.execute("UPDATE sources SET status='downloading' \
+while not killer.kill_now:
+    cur.execute("UPDATE sources SET status='downloading', status_update=now() \
     WHERE source_id = ( \
     SELECT source_id \
     FROM sources \
@@ -55,19 +58,19 @@ while True:
                 audiopath = youtube_download_audio(yt)
                 if audiopath:
                     print("Fetching succeeded")
-                    cur.execute(f"UPDATE sources SET status='audio_extracted', audiopath='{audiopath}' WHERE source_id = '{source_id}'")
+                    cur.execute(f"UPDATE sources SET status='audio_extracted', audiopath='{audiopath}', status_update=now() WHERE source_id = '{source_id}'")
                 else:
                     print("Fetching failed: no audio")
-                    cur.execute(f"UPDATE sources SET status='error' WHERE source_id = '{source_id}'")
+                    cur.execute(f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
             except KeyboardInterrupt:
                 print("Stopping")
-                cur.execute(f"UPDATE sources SET status='ready_for_download' WHERE source_id = '{source_id}'")
+                cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
                 conn.commit()
                 break
             except Exception as ex:
                 print(f"Preprocessing failed")
                 traceback.print_exc()
-                cur.execute(f"UPDATE sources SET status='ready_for_download' WHERE source_id = '{source_id}'")
+                cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
             finally:
                 conn.commit
         else:

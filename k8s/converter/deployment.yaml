@@ -28,13 +28,15 @@ spec:
           claimName: datapipe-storage
       containers:
         - name: converter
-          image: ghcr.io/ccoreilly/datapipe:0.2.3
+          image: ghcr.io/ccoreilly/datapipe:0.3.0
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "converter" ]
           volumeMounts:
           - mountPath: /datapipe/
             name: datapipe-storage
           env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
             - name: PG_HOST
               value: datapipe-db
             - name: AUDIO_16_PATH

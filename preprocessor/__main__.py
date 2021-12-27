@@ -7,6 +7,9 @@ import requests
 import traceback
 
 from db import get_connection
+from utils import GracefulKiller
+
+killer = GracefulKiller()
 
 API_TOKEN = getenv("API_TOKEN")
 API_URL = getenv("API_URL", "https://api-inference.huggingface.co/models/ivanlau/language-detection-fine-tuned-on-xlm-roberta-base")
@@ -68,8 +71,8 @@ conn = get_connection()
 cur = conn.cursor()
 
 print("Starting")
-while True:
-    cur.execute("UPDATE sources SET status='checking_language' \
+while not killer.kill_now:
+    cur.execute("UPDATE sources SET status='checking_language', status_update=now() \
     WHERE source_id = ( \
     SELECT source_id \
     FROM sources \
@@ -89,16 +92,16 @@ while True:
                 yt = get_youtube(source_id, url)
                 new_status = "ready_for_download" if youtube_language_check(yt) else "bad_language"
                 license = "CC-BY" if youtube_license_check(yt) else "PROP"
-                cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}' WHERE source_id = '{source_id}'")
+                cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}', status_update=now() WHERE source_id = '{source_id}'")
             except KeyboardInterrupt:
                 print("Stopping")
-                cur.execute(f"UPDATE sources SET status='new' WHERE source_id = '{source_id}'")
+                cur.execute(f"UPDATE sources SET status='new', status_update=now() WHERE source_id = '{source_id}'")
                 conn.commit()
                 break
             except Exception as ex:
                 print(f"Preprocessing failed")
                 traceback.print_exc()
-                cur.execute(f"UPDATE sources SET status='new' WHERE source_id = '{source_id}'")
+                cur.execute(f"UPDATE sources SET status='new', status_update=now() WHERE source_id = '{source_id}'")
             finally:
                 conn.commit
         else:
