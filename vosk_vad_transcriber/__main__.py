@@ -2,11 +2,11 @@ import os
 import wave
 import argparse
 import grpc
-from stt_grpc.stt_service_pb2 import RecognitionSpec, RecognitionConfig, StreamingRecognitionRequest
-from stt_grpc.stt_service_pb2_grpc import SttServiceStub
+from vosk_stt_grpc.stt_service_pb2 import RecognitionSpec, RecognitionConfig, StreamingRecognitionRequest
+from vosk_stt_grpc.stt_service_pb2_grpc import SttServiceStub
 
-vosk_server_host = os.getenv('VOSK_SERVER_HOST') or '127.0.0.1'
-vosk_server_port = os.getenv('VOSK_SERVER_PORT') or 5001
+vosk_server_host = os.getenv('VOSK_SERVER_HOST', '127.0.0.1')
+vosk_server_port = os.getenv('VOSK_SERVER_PORT', 5001)
 channel = grpc.insecure_channel(f"{vosk_server_host}:{vosk_server_port}")
 
 CHUNK_SIZE = 4000
@@ -31,12 +31,6 @@ def gen(audio_file_name):
             break
         yield StreamingRecognitionRequest(audio_content=data)
 
-    # with open(audio_file_name, 'rb') as f:
-    #     data = f.read(CHUNK_SIZE)
-    #     while data != b'':
-    #     print(len(data))
-    #         data = f.read(CHUNK_SIZE)
-
 
 def run(audio_file_name):
     stub = SttServiceStub(channel)
@@ -53,12 +47,10 @@ def run(audio_file_name):
                 # print('Is final: ', r.chunks[0].final)
                 # print('')
                 if (len(r.chunks) > 0):
-                    print(r.chunks[0].alternatives[0].text)
-                    print(r.chunks[0].alternatives[0].words[0].start_time.seconds)
-                    print(r.chunks[0].alternatives[0].words[-1].end_time.seconds)
+                    # print(r.chunks[0].alternatives[0].text)
                     end = r.chunks[0].alternatives[0].words[-1].end_time.seconds + r.chunks[0].alternatives[0].words[-1].end_time.nanos/1000000000
                     start = r.chunks[0].alternatives[0].words[0].start_time.seconds + r.chunks[0].alternatives[0].words[0].start_time.nanos/1000000000
-                    print(end - start)
+                    print(f"{start:.2f} - {end:.2f}: {end - start:.2f}")
             except LookupError:
                 print('No available chunks')
     except grpc._channel._Rendezvous as err:

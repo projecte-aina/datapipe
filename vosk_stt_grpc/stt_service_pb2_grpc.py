@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from stt_grpc import stt_service_pb2 as stt__grpc_dot_stt__service__pb2
+from vosk_stt_grpc import stt_service_pb2 as vosk__stt__grpc_dot_stt__service__pb2
 
 
 class SttServiceStub(object):
@@ -16,8 +16,8 @@ class SttServiceStub(object):
         """
         self.StreamingRecognize = channel.stream_stream(
                 '/vosk.stt.v1.SttService/StreamingRecognize',
-                request_serializer=stt__grpc_dot_stt__service__pb2.StreamingRecognitionRequest.SerializeToString,
-                response_deserializer=stt__grpc_dot_stt__service__pb2.StreamingRecognitionResponse.FromString,
+                request_serializer=vosk__stt__grpc_dot_stt__service__pb2.StreamingRecognitionRequest.SerializeToString,
+                response_deserializer=vosk__stt__grpc_dot_stt__service__pb2.StreamingRecognitionResponse.FromString,
                 )
 
 
@@ -35,8 +35,8 @@ def add_SttServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'StreamingRecognize': grpc.stream_stream_rpc_method_handler(
                     servicer.StreamingRecognize,
-                    request_deserializer=stt__grpc_dot_stt__service__pb2.StreamingRecognitionRequest.FromString,
-                    response_serializer=stt__grpc_dot_stt__service__pb2.StreamingRecognitionResponse.SerializeToString,
+                    request_deserializer=vosk__stt__grpc_dot_stt__service__pb2.StreamingRecognitionRequest.FromString,
+                    response_serializer=vosk__stt__grpc_dot_stt__service__pb2.StreamingRecognitionResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -60,7 +60,7 @@ class SttService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.stream_stream(request_iterator, target, '/vosk.stt.v1.SttService/StreamingRecognize',
-            stt__grpc_dot_stt__service__pb2.StreamingRecognitionRequest.SerializeToString,
-            stt__grpc_dot_stt__service__pb2.StreamingRecognitionResponse.FromString,
+            vosk__stt__grpc_dot_stt__service__pb2.StreamingRecognitionRequest.SerializeToString,
+            vosk__stt__grpc_dot_stt__service__pb2.StreamingRecognitionResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
