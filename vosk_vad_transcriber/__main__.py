@@ -1,15 +1,19 @@
 import os
 import wave
-import argparse
 import grpc
+import traceback
+from time import sleep
+
+from db import get_connection
+from utils import GracefulKiller
 from vosk_stt_grpc.stt_service_pb2 import RecognitionSpec, RecognitionConfig, StreamingRecognitionRequest
 from vosk_stt_grpc.stt_service_pb2_grpc import SttServiceStub
+
+killer = GracefulKiller()
 
 vosk_server_host = os.getenv('VOSK_SERVER_HOST', '127.0.0.1')
 vosk_server_port = os.getenv('VOSK_SERVER_PORT', 5001)
 channel = grpc.insecure_channel(f"{vosk_server_host}:{vosk_server_port}")
-
-CHUNK_SIZE = 4000
 
 def gen(audio_file_name):
     specification = RecognitionSpec(
@@ -31,34 +35,77 @@ def gen(audio_file_name):
             break
         yield StreamingRecognitionRequest(audio_content=data)
 
+conn = get_connection()
+conn.autocommit = True
 
-def run(audio_file_name):
+cur = conn.cursor()
+
+def transcribe(audio_file_name):
     stub = SttServiceStub(channel)
     it = stub.StreamingRecognize(gen(audio_file_name))
 
     try:
         for r in it:
             try:
-                # print('Start chunk: ')
-                # for alternative in r.chunks[0].alternatives:
-                #     print('alternative: ', alternative.text)
-                #     print('alternative_confidence: ', alternative.confidence)
-                #     print('words: ', alternative.words)
-                # print('Is final: ', r.chunks[0].final)
-                # print('')
                 if (len(r.chunks) > 0):
-                    # print(r.chunks[0].alternatives[0].text)
-                    end = r.chunks[0].alternatives[0].words[-1].end_time.seconds + r.chunks[0].alternatives[0].words[-1].end_time.nanos/1000000000
+                    text = r.chunks[0].alternatives[0].text
                     start = r.chunks[0].alternatives[0].words[0].start_time.seconds + r.chunks[0].alternatives[0].words[0].start_time.nanos/1000000000
-                    print(f"{start:.2f} - {end:.2f}: {end - start:.2f}")
+                    end = r.chunks[0].alternatives[0].words[-1].end_time.seconds + r.chunks[0].alternatives[0].words[-1].end_time.nanos/1000000000
+                    yield (text, start, end)
             except LookupError:
-                print('No available chunks')
+                pass
     except grpc._channel._Rendezvous as err:
         print('Error code %s, message: %s' % (err._state.code, err._state.details))
 
+print("Starting")
+while not killer.kill_now:
+    cur.execute("UPDATE sources SET status='vad_running', status_update=now() \
+    WHERE source_id = ( \
+    SELECT source_id \
+    FROM sources \
+    WHERE status='audio_converted' \
+    ORDER BY random()  \
+    FOR UPDATE SKIP LOCKED \
+    LIMIT 1 \
+    ) \
+    RETURNING source_id, audiopath_16;")
+    conn.commit()
+    next = cur.fetchone()
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--path', required=True, help='audio file path')
-    args = parser.parse_args()
-    run(args.path)
+    if next:
+        source_id, audiopath_16 = next
+        try:
+            print(f"Transcribing source {source_id}")
+            for slice in transcribe(audiopath_16):
+                text, start, end = slice
+                duration = end - start
+                print(f"Saving slice of {duration:.2f}s starting with: {text[:10]}")
+                cur.execute("INSERT INTO clips (source_id, 'start', 'end', duration) VALUES (%s, %s, %s, %s) RETURNING clip_id;", (source_id, start, end, duration))
+                clip_id = cur.fetchone()[0]
+                print(f"Saved clip with id {clip_id}")
+                print(f"Saving vosk transcript")
+                cur.execute("INSERT INTO transcripts ('text', transcriber, clip_id) VALUES (%s, %s, %s) RETURNING transcript_id;", (text, "vosk", clip_id))
+                transcript_id = cur.fetchone()[0]
+                print(f"Saved transcript with id {transcript_id}")
+            cur.execute(f"UPDATE sources SET status='vad_done', status_update=now() WHERE source_id = '{source_id}'")
+            print(f"Finished transcribing source {source_id}")
+        except KeyboardInterrupt:
+            print("Stopping")
+            cur.execute(f"UPDATE sources SET status='audio_converted', status_update=now() WHERE source_id = '{source_id}'")
+            conn.commit()
+            break
+        except Exception as ex:
+            print(f"Transcription failed")
+            traceback.print_exc()
+            cur.execute(f"UPDATE sources SET status='audio_converted', status_update=now() WHERE source_id = '{source_id}'")
+        finally:
+            conn.commit
+    else:
+        try:
+            print("No work, sleeping for 10s...")
+            sleep(10)
+        except KeyboardInterrupt:
+            break
+
+cur.close()
+conn.close()

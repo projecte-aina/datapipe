@@ -1,6 +1,8 @@
 from os import getenv, path, remove, makedirs
+import subprocess
 from time import sleep
 from pydub import AudioSegment
+from pydub.exceptions import CouldntDecodeError
 
 import traceback
 
@@ -16,12 +18,20 @@ if not path.exists(AUDIO_16_PATH):
 
 def convert(source_id, audiopath):
     print(f"Converting {audiopath}")
-    sound = AudioSegment.from_file(audiopath)
-    sr = sound.frame_rate
-    duration = sound.duration_seconds
     audiopath16 = path.join(AUDIO_16_PATH, f"{source_id}.wav")
+    sr = 0
+    duration = 0
     try:
+        sound = AudioSegment.from_file(audiopath)
+        sr = sound.frame_rate
+        duration = sound.duration_seconds
         sound.export(audiopath16, format="wav", parameters=["-ac", "1", "-ar", "16000"])
+    except CouldntDecodeError:
+        print("Trying with ffmpeg")
+        result = subprocess.run(['ffmpeg', '-i', audiopath, '-ac', '1', '-ar', '16000', '-f', 'wav', audiopath16], capture_output=True)
+        if result.returncode != 0:
+            print(f"ffmpeg command failed: {result.stderr.decode()}")
+            raise Exception
     except Exception as ex:
         if path.isfile(audiopath16):
             remove(audiopath16)

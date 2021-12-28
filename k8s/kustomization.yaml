@@ -9,3 +9,4 @@ resources:
   - preprocessor
   - fetcher
   - converter
+  - vosk_vad_transcriber

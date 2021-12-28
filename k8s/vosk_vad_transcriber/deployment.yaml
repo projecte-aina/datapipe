@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: converter
+  name: vad-transcriber
   labels:
-    app: converter
+    app: vad-transcriber
     project: datapipe
 spec:
   replicas: 1
@@ -13,11 +13,11 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: converter
+      app: vad-transcriber
   template:
     metadata:
       labels:
-        app: converter
+        app: vad-transcriber
         project: datapipe
     spec:
       imagePullSecrets:
@@ -27,10 +27,10 @@ spec:
         persistentVolumeClaim:
           claimName: datapipe-storage-local
       containers:
-        - name: converter
+        - name: vad-transcriber
           image: ghcr.io/ccoreilly/datapipe:0.4.1
           imagePullPolicy: IfNotPresent
-          command: [ "python", "-m", "converter" ]
+          command: [ "python", "-m", "vosk_vad_transcriber" ]
           volumeMounts:
           - mountPath: /datapipe/
             name: datapipe-storage
@@ -39,8 +39,8 @@ spec:
               value: "1"
             - name: PG_HOST
               value: datapipe-db
-            - name: AUDIO_16_PATH
-              value: /datapipe/audio16
+            - name: VOSK_SERVER_HOST
+              value: ona-vosk
             - name: PG_PASSWORD
               valueFrom:
                 secretKeyRef:

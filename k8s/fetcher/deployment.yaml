@@ -28,7 +28,7 @@ spec:
           claimName: datapipe-storage-local
       containers:
         - name: fetcher
-          image: ghcr.io/ccoreilly/datapipe:0.3.0
+          image: ghcr.io/ccoreilly/datapipe:0.4.0
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "fetcher" ]
           volumeMounts:
