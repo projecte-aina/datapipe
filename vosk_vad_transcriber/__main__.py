@@ -80,11 +80,11 @@ while not killer.kill_now:
                 text, start, end = slice
                 duration = end - start
                 print(f"Saving slice of {duration:.2f}s starting with: {text[:10]}")
-                cur.execute("INSERT INTO clips (source_id, 'start', 'end', duration) VALUES (%s, %s, %s, %s) RETURNING clip_id;", (source_id, start, end, duration))
+                cur.execute('INSERT INTO clips (source_id, "start", "end", duration) VALUES (%s, %s, %s, %s) RETURNING clip_id;', (source_id, start, end, duration))
                 clip_id = cur.fetchone()[0]
                 print(f"Saved clip with id {clip_id}")
                 print(f"Saving vosk transcript")
-                cur.execute("INSERT INTO transcripts ('text', transcriber, clip_id) VALUES (%s, %s, %s) RETURNING transcript_id;", (text, "vosk", clip_id))
+                cur.execute('INSERT INTO transcripts ("text", transcriber, clip_id) VALUES (%s, %s, %s) RETURNING transcript_id;', (text, "vosk", clip_id))
                 transcript_id = cur.fetchone()[0]
                 print(f"Saved transcript with id {transcript_id}")
             cur.execute(f"UPDATE sources SET status='vad_done', status_update=now() WHERE source_id = '{source_id}'")

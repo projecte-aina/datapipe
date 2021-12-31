@@ -1,4 +1,5 @@
 from os import getenv, path, remove
+from urllib.error import HTTPError
 from time import sleep
 from pytube import YouTube
 import traceback
@@ -64,6 +65,12 @@ while not killer.kill_now:
                     cur.execute(f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
             else:
                 print(f"Unknown source type {type}!")
+        except HTTPError as err:
+            print(f"HTTP Error {err}")
+            cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
+            conn.commit()
+            if err.code == 429:
+                sleep(600)
         except KeyboardInterrupt:
             print("Stopping")
             cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")

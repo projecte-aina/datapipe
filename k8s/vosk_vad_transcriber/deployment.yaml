@@ -28,7 +28,7 @@ spec:
           claimName: datapipe-storage-local
       containers:
         - name: vad-transcriber
-          image: ghcr.io/ccoreilly/datapipe:0.4.1
+          image: ghcr.io/ccoreilly/datapipe:0.4.2
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "vosk_vad_transcriber" ]
           volumeMounts:
