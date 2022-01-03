@@ -92,7 +92,8 @@ while not killer.kill_now:
                 yt = get_youtube(source_id, url)
                 new_status = "ready_for_download" if youtube_language_check(yt) else "bad_language"
                 license = "CC-BY" if youtube_license_check(yt) else "PROP"
-                cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}', status_update=now() WHERE source_id = '{source_id}'")
+                captions = 'ca' in yt.captions
+                cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}', has_captions='{captions}' status_update=now() WHERE source_id = '{source_id}'")
             except KeyboardInterrupt:
                 print("Stopping")
                 cur.execute(f"UPDATE sources SET status='new', status_update=now() WHERE source_id = '{source_id}'")
