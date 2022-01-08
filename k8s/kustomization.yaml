@@ -4,9 +4,10 @@ kind: Kustomization
 namespace: assistent
 
 resources:
-  - postgresql
-  - storage
-  - preprocessor
-  - fetcher
   - converter
+  - fetcher
+  - postgresql
+  - preprocessor
+  - splitter
+  - storage
   - vosk_vad_transcriber

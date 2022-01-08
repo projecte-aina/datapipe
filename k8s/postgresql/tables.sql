@@ -1,5 +1,6 @@
 CREATE TYPE source_type AS ENUM ('youtube', 'tv3', 'ib3', 'tiktok');
 CREATE TYPE source_status AS ENUM ('new', 'downloading', 'downloaded', 'audio_extracting', 'audio_extracted', 'audio_converting', 'audio_converted', 'error');
+CREATE TYPE clip_status AS ENUM ('new', 'splitting', 'split', 'validated');
 
 CREATE TABLE IF NOT EXISTS sources(
     source_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
