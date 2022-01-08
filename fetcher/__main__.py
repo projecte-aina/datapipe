@@ -81,7 +81,7 @@ while not killer.kill_now:
             traceback.print_exc()
             cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
         finally:
-            conn.commit
+            conn.commit()
     else:
         try:
             print("No work, sleeping for 10s...")

@@ -104,7 +104,7 @@ while not killer.kill_now:
                 traceback.print_exc()
                 cur.execute(f"UPDATE sources SET status='new', status_update=now() WHERE source_id = '{source_id}'")
             finally:
-                conn.commit
+                conn.commit()
         else:
             print(f"Unknown source type {type}!")
     else:

@@ -28,7 +28,7 @@ spec:
           claimName: datapipe-storage-local
       containers:
         - name: splitter
-          image: ghcr.io/ccoreilly/datapipe:0.5.5
+          image: ghcr.io/ccoreilly/datapipe:0.6.1
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "splitter" ]
           volumeMounts:

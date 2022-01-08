@@ -11,3 +11,4 @@ resources:
   - splitter
   - storage
   - vosk_vad_transcriber
+  - wav2vec2_transcriber

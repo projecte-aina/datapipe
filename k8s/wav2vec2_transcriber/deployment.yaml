@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vad-transcriber
+  name: wav2vec2-transcriber
   labels:
-    app: vad-transcriber
+    app: wav2vec2-transcriber
     project: datapipe
 spec:
   replicas: 1
@@ -13,11 +13,11 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: vad-transcriber
+      app: wav2vec2-transcriber
   template:
     metadata:
       labels:
-        app: vad-transcriber
+        app: wav2vec2-transcriber
         project: datapipe
     spec:
       imagePullSecrets:
@@ -27,10 +27,10 @@ spec:
         persistentVolumeClaim:
           claimName: datapipe-storage-local
       containers:
-        - name: vad-transcriber
+        - name: wav2vec2-transcriber
           image: ghcr.io/ccoreilly/datapipe:0.6.1
           imagePullPolicy: IfNotPresent
-          command: [ "python", "-m", "vosk_vad_transcriber" ]
+          command: [ "python", "-m", "wav2vec2_transcriber" ]
           volumeMounts:
           - mountPath: /datapipe/
             name: datapipe-storage
@@ -39,8 +39,8 @@ spec:
               value: "1"
             - name: PG_HOST
               value: datapipe-db
-            - name: VOSK_SERVER_HOST
-              value: ona-vosk
+            - name: API_URL
+              value: http://wav2vec2-catala/recognize
             - name: PG_PASSWORD
               valueFrom:
                 secretKeyRef:

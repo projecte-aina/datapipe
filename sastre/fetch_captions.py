@@ -37,7 +37,7 @@ while not killer.kill_now:
             print(f"Preprocessing failed")
             traceback.print_exc()
         finally:
-            conn.commit
+            conn.commit()
     else:
         try:
             print("No work, sleeping for 10s...")

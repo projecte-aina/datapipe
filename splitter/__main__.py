@@ -69,7 +69,7 @@ while not killer.kill_now:
             traceback.print_exc()
             cur.execute(f"UPDATE clips SET status='new', status_update=now() WHERE clip_id = '{clip_id}'")
         finally:
-            conn.commit
+            conn.commit()
     else:
         try:
             print("No work, sleeping for 10s...")
