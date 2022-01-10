@@ -70,6 +70,7 @@ while not killer.kill_now:
             cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
             conn.commit()
             if err.code == 429:
+                print("Too Many requests, waiting 10 Minutes")
                 sleep(600)
         except KeyboardInterrupt:
             print("Stopping")

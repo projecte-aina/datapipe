@@ -1,6 +1,7 @@
 from os import getenv
 from time import sleep
 from pytube import YouTube
+from urllib.error import HTTPError
 
 import json
 import requests
@@ -93,7 +94,14 @@ while not killer.kill_now:
                 new_status = "ready_for_download" if youtube_language_check(yt) else "bad_language"
                 license = "CC-BY" if youtube_license_check(yt) else "PROP"
                 captions = 'ca' in yt.captions
-                cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}', has_captions='{captions}' status_update=now() WHERE source_id = '{source_id}'")
+                cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}', has_captions='{captions}', status_update=now() WHERE source_id = '{source_id}'")
+            except HTTPError as err:
+                print(f"HTTP Error {err}")
+                cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
+                conn.commit()
+                if err.code == 429:
+                    print("Too Many requests, waiting 10 Minutes")
+                    sleep(600)
             except KeyboardInterrupt:
                 print("Stopping")
                 cur.execute(f"UPDATE sources SET status='new', status_update=now() WHERE source_id = '{source_id}'")
