@@ -6,6 +6,7 @@ namespace: assistent
 resources:
   - converter
   - fetcher
+  - grafana
   - postgresql
   - preprocessor
   - splitter

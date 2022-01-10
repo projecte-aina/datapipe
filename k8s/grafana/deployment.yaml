@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+    project: datapipe
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: grafana
+        project: datapipe
+    spec:
+
+      securityContext:
+        runAsUser: 472
+        fsGroup: 472
+        runAsGroup: 1
+
+      containers:
+      - name: grafana
+        image: grafana/grafana:7.5.4
+        env:
+          - name: GF_INSTALL_PLUGINS
+            value: grafana-piechart-panel,grafana-worldmap-panel
+          - name: GF_LOG_MODE
+            value: console
+          - name: GF_LOG_LEVEL
+            value: info
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "128m"
+          limits:
+            memory: "512Mi"
+            cpu: "256m"
+        volumeMounts:
+          - name: grafana-storage
+            mountPath: /var/lib/grafana
+      volumes:
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: grafana-storage
+

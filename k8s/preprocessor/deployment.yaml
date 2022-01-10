@@ -24,7 +24,7 @@ spec:
       - name: github-registry
       containers:
         - name: preprocessor
-          image: ghcr.io/ccoreilly/datapipe:0.6.3
+          image: ghcr.io/ccoreilly/datapipe:0.6.4
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "preprocessor" ]
           env:

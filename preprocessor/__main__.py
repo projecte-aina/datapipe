@@ -16,6 +16,8 @@ API_TOKEN = getenv("API_TOKEN")
 API_URL = getenv("API_URL", "https://api-inference.huggingface.co/models/ivanlau/language-detection-fine-tuned-on-xlm-roberta-base")
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
 
+youtube_wait = 5
+
 class NoProbsException(Exception):
     """No probabilities returned"""
     pass
@@ -97,11 +99,12 @@ while not killer.kill_now:
                 cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}', has_captions='{captions}', status_update=now() WHERE source_id = '{source_id}'")
             except HTTPError as err:
                 print(f"HTTP Error {err}")
-                cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
+                cur.execute(f"UPDATE sources SET status='new', status_update=now() WHERE source_id = '{source_id}'")
                 conn.commit()
                 if err.code == 429:
-                    print("Too Many requests, waiting 10 Minutes")
-                    sleep(600)
+                    print("Too Many requests, waiting 1 hour")
+                    youtube_wait += 5
+                    sleep(3600)
             except KeyboardInterrupt:
                 print("Stopping")
                 cur.execute(f"UPDATE sources SET status='new', status_update=now() WHERE source_id = '{source_id}'")

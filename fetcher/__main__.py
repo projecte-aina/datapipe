@@ -11,6 +11,8 @@ killer = GracefulKiller()
 
 AUDIO_DOWNLOAD_PATH = getenv("AUDIO_DOWNLOAD_PATH", "./audio")
 
+youtube_wait = 5
+
 class FilesizeNotMatching(Exception):
     """Filesize of downloaded file does not match"""
     pass
@@ -70,8 +72,9 @@ while not killer.kill_now:
             cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
             conn.commit()
             if err.code == 429:
-                print("Too Many requests, waiting 10 Minutes")
-                sleep(600)
+                print("Too Many requests, waiting 1 hour")
+                youtube_wait += 5
+                sleep(3600)
         except KeyboardInterrupt:
             print("Stopping")
             cur.execute(f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")

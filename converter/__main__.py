@@ -16,13 +16,13 @@ if not path.exists(AUDIO_16_PATH):
     makedirs(AUDIO_16_PATH)
 
 def get_duration_and_sr(audiopath):
-    cmd = ['ffprobe', '-i', audiopath, '-show_streams', '-v', 'quiet', '-of', 'json']
+    cmd = ['ffprobe', '-i', audiopath, '-show_streams', '-show_format', '-v', 'quiet', '-of', 'json']
     p = Popen(cmd, stdout=PIPE, stderr=PIPE)
     stdout, stderr = p.communicate()
     if stderr:
         raise Exception(stderr)
     result = json.loads(stdout)
-    duration = result['streams'][0]['duration']
+    duration = result['format']['duration']
     sr = result['streams'][0]['sample_rate']
     return duration, sr
 

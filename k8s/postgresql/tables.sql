@@ -33,3 +33,11 @@ alter table clips add transcript_id UUID REFERENCES transcripts(transcript_id);
 
         
 CREATE INDEX IF NOT EXISTS idx_sources_url ON public.sources USING btree (url);
+
+create user grafana with encrypted password 'datapipe';
+grant connect on database datapipe to grafana;
+grant usage on database datapipe to grafana;
+grant usage on schema public to grafana;
+grant select on all tables in schema public to grafana;
+grant select on all sequences in schema public to grafana;
+alter default privileges in schema public grant select on tables to grafana;
