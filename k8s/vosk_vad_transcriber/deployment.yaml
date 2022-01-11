@@ -6,7 +6,7 @@ metadata:
     app: vad-transcriber
     project: datapipe
 spec:
-  replicas: 1
+  replicas: 3
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -28,7 +28,7 @@ spec:
           claimName: datapipe-storage-local
       containers:
         - name: vad-transcriber
-          image: ghcr.io/ccoreilly/datapipe:0.6.4
+          image: ghcr.io/ccoreilly/datapipe:0.6.5
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "vosk_vad_transcriber" ]
           volumeMounts:

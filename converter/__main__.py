@@ -48,6 +48,8 @@ cur = conn.cursor()
 
 print("Starting")
 while not killer.kill_now:
+    cur.close()
+    cur = conn.cursor()
     cur.execute("UPDATE sources SET status='audio_converting', status_update=now() \
     WHERE source_id = ( \
     SELECT source_id \

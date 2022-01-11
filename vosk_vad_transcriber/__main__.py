@@ -34,11 +34,10 @@ def gen(audio_file_name):
         if len(data) == 0:
             break
         yield StreamingRecognitionRequest(audio_content=data)
+    wf.close()
 
 conn = get_connection()
 conn.autocommit = True
-
-cur = conn.cursor()
 
 def transcribe(audio_file_name):
     stub = SttServiceStub(channel)
@@ -57,8 +56,12 @@ def transcribe(audio_file_name):
     except grpc._channel._Rendezvous as err:
         print('Error code %s, message: %s' % (err._state.code, err._state.details))
 
+cur = conn.cursor()
+
 print("Starting")
 while not killer.kill_now:
+    cur.close()
+    cur = conn.cursor()
     cur.execute("UPDATE sources SET status='vad_running', status_update=now() \
     WHERE source_id = ( \
     SELECT source_id \
