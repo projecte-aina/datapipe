@@ -6,11 +6,14 @@ RUN apt-get update && apt-get install --no-install-recommends -y ffmpeg bash cur
 WORKDIR /app
 
 COPY requirements.txt .
+# remove torch as we want to install cpu-only linux wheel
+# RUN sed -i '/torch/d' requirements.txt
 
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 RUN pip install --no-cache-dir -r requirements.txt
+  # pip install https://download.pytorch.org/whl/cpu/torch-1.10.1%2Bcpu-cp39-cp39-linux_x86_64.whl
 
 COPY . .
 

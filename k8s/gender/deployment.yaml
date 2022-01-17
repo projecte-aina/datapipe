@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gender
+  labels:
+    app: gender
+    project: datapipe
+spec:
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: gender
+  template:
+    metadata:
+      labels:
+        app: gender
+        project: datapipe
+    spec:
+      imagePullSecrets:
+      - name: github-registry
+      volumes:
+      - name: datapipe-storage
+        persistentVolumeClaim:
+          claimName: datapipe-storage-local
+      containers:
+        - name: gender
+          image: ghcr.io/ccoreilly/datapipe:0.7.2
+          imagePullPolicy: IfNotPresent
+          command: [ "python", "-m", "gender" ]
+          volumeMounts:
+          - mountPath: /datapipe/
+            name: datapipe-storage
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PG_HOST
+              value: datapipe-db
+            - name: CLIPS_PATH
+              value: /datapipe/clips
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: datapipe-db-secret
+                  key: POSTGRES_PASSWORD
