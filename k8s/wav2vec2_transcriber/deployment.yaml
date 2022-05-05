@@ -6,7 +6,7 @@ metadata:
     app: wav2vec2-transcriber
     project: datapipe
 spec:
-  replicas: 3
+  replicas: 1
   strategy:
     rollingUpdate:
       maxSurge: 1

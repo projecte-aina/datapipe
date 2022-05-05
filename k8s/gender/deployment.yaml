@@ -6,7 +6,7 @@ metadata:
     app: gender
     project: datapipe
 spec:
-  replicas: 3
+  replicas: 0
   strategy:
     rollingUpdate:
       maxSurge: 1
