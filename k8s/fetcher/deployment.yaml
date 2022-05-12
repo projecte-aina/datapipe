@@ -20,15 +20,13 @@ spec:
         app: fetcher
         project: datapipe
     spec:
-      imagePullSecrets:
-      - name: github-registry
       volumes:
       - name: datapipe-storage
         persistentVolumeClaim:
           claimName: datapipe-storage-local
       containers:
         - name: fetcher
-          image: ghcr.io/ccoreilly/datapipe:0.6.4
+          image: paulandrei/datapipe:0.7.2
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "fetcher" ]
           volumeMounts:

@@ -20,15 +20,13 @@ spec:
         app: converter
         project: datapipe
     spec:
-      imagePullSecrets:
-      - name: github-registry
       volumes:
       - name: datapipe-storage
         persistentVolumeClaim:
           claimName: datapipe-storage-local
       containers:
         - name: converter
-          image: ghcr.io/ccoreilly/datapipe:0.6.5
+          image: paulandrei/datapipe:0.7.2
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "converter" ]
           volumeMounts:

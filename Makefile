@@ -10,10 +10,10 @@ clean:
 	rm $(GRPC_SOURCES)
 
 build:
-	docker build . -t ghcr.io/ccoreilly/datapipe:${VERSION}
+	docker build . -t paulandrei/datapipe:${VERSION}
 
 push: build
-	docker push ghcr.io/ccoreilly/datapipe:${VERSION}
+	docker push paulandrei/datapipe:${VERSION}
 
 deploy:
 	kustomize build k8s | kubectl apply -f -

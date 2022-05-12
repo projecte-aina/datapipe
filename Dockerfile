@@ -1,6 +1,6 @@
 FROM python:3.9.7-slim-buster
 
-RUN apt-get update && apt-get install --no-install-recommends -y ffmpeg bash curl && \
+RUN apt-get update && apt-get install --no-install-recommends -y ffmpeg bash curl git && \
     rm -rf /var/lib/{apt,dpkg,cache,log}
 
 WORKDIR /app
