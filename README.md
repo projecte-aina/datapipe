@@ -54,8 +54,14 @@ data:
 
 #Apply secret
 kubectl apply -f k8s/postgresql/secret.ymal
-```
 
+#List of pods
+kubectl --namespace assistent  get pods
+
+#Logs 
+kubectl --namespace assistent logs preprocessor-
+
+```
 ## Deploy
 
 ```bash
