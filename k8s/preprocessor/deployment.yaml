@@ -20,11 +20,9 @@ spec:
         app: preprocessor
         project: datapipe
     spec:
-      imagePullSecrets:
-      - name: github-registry
       containers:
         - name: preprocessor
-          image: ghcr.io/ccoreilly/datapipe:0.6.4
+          image: paulandrei/datapipe:0.7.2
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "preprocessor" ]
           env:

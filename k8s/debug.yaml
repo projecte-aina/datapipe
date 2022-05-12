@@ -26,7 +26,7 @@ spec:
           claimName: datapipe-storage
       containers:
         - name: debug
-          image: ghcr.io/ccoreilly/datapipe:0.3.0
+          image: paulandrei/datapipe:0.7.2
           imagePullPolicy: IfNotPresent
           command: [ "sleep" ]
           args: ["infinity"]
