@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: text2lang
+  labels:
+    app: text2lang
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: text2lang
+  template:
+    metadata:
+      labels:
+        app: text2lang
+    spec:
+      containers:
+        - name: text2lang
+          image: paulandrei/text2lang:0.1.2
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 30
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+              name: http
