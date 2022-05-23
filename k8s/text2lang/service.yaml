@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: text2lang
+  labels:
+    app: text2lang
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8000
+    name: http
+  selector:
+    app: text2lang

@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: assistent
 
 resources:
+  - text2lang
   - converter
   - fetcher
   - gender
