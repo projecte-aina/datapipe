@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: assistent
 
 resources:
+  - vosk
   - text2lang
   - converter
   - fetcher
