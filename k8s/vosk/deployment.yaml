@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ona-vosk
+  labels:
+    app: ona-vosk
+    tier: backend
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ona-vosk
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: ona-vosk
+        tier: backend
+    spec:
+      containers:
+        - name: ona-vosk
+          image: assistent/kaldi-catala:0.0.4
+          env:
+            - name: VOSK_SAMPLE_RATE
+              value: "16000"
+          ports:
+            - containerPort: 5001
+              protocol: TCP
+              name: http
