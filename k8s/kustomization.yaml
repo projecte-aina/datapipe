@@ -14,5 +14,6 @@ resources:
   - preprocessor
   - splitter
   - storage
+  - wav2vec2_service
   - vosk_vad_transcriber
   - wav2vec2_transcriber
