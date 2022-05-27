@@ -88,6 +88,16 @@ Restarts all pods
 ```bash
 kubectl -n assistent rollout restart deploy
 ```
+## Start using datapipe
+
+Access to any pod that was set up using paulandrei/datapipe image (example: converter-, fetcher-.. )
+```bash
+kubectl -n assistent exec -it fetcher-YOUR_POD_ID bash
+```
+Using the cli add new channel
+```bash
+python -m cli add-channel https://www.youtube.com/user/gencat/
+```
 ## Authors
 
 - Ciaran O'Reilly
