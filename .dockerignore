@@ -7,3 +7,5 @@ k8s
 *.wav
 *.mp4
 *.webm
+.gitignore
+.dockerignore

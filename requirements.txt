@@ -72,7 +72,7 @@ pyannote.audio @ https://github.com/pyannote/pyannote-audio/archive/develop.zip
 pyannote.core==4.4
 pyannote.database==4.1.1
 pyannote.metrics==3.2
-pyannote.pipeline==2.2
+pyannote.pipeline==2.3
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.21
@@ -102,7 +102,7 @@ sniffio==1.2.0
 sortedcollections==2.1.0
 sortedcontainers==2.4.0
 SoundFile==0.10.3.post1
-spectralcluster==0.2.4
+spectralcluster==0.2.12
 SQLAlchemy==1.4.29
 stevedore==3.5.0
 sympy==1.9
@@ -112,7 +112,7 @@ tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 threadpoolctl==3.0.0
 torch==1.10.1
-torch-audiomentations==0.10.1
+torch-audiomentations==0.11.0
 torch-pitch-shift==1.2.2
 torchaudio==0.10.1
 torchmetrics==0.6.2

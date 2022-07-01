@@ -62,7 +62,6 @@ while not killer.kill_now:
     RETURNING source_id, audiopath;")
     conn.commit()
     next = cur.fetchone()
-
     if next:
         source_id, audiopath = next
         try:
@@ -81,7 +80,7 @@ while not killer.kill_now:
             conn.commit()
     else:
         try:
-            print("No work, sleeping for 10s...")
+            print("123 No work, sleeping for 10s...")
             sleep(10)
         except KeyboardInterrupt:
             break

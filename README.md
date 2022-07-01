@@ -54,7 +54,7 @@ data:
 ```
 Apply secret
 ```bash
-kubectl apply -f k8s/postgresql/secret.ymal
+kubectl apply -f k8s/postgresql/secret.yaml
 ```
 
 ## Deploy
