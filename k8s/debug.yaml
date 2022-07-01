@@ -26,7 +26,7 @@ spec:
           claimName: datapipe-storage
       containers:
         - name: debug
-          image: paulandrei/datapipe:0.7.4
+          image: paulandrei/datapipe:0.7.5
           imagePullPolicy: IfNotPresent
           command: [ "sleep" ]
           args: ["infinity"]
