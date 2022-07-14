@@ -1,4 +1,5 @@
 name: datapipe
+namespace: assistent
 
 # The build section defines how to build the images of your development environment
 # More info: https://www.okteto.com/docs/reference/manifest/#build
@@ -16,20 +17,71 @@ build:
 
 # The deploy section defines how to deploy your development environment
 # More info: https://www.okteto.com/docs/reference/manifest/#deploy
-deploy:
-  - make deploy
+#deploy:
+#  - make deploy
 
 # The dependencies section defines other git repositories to be deployed as part of your development environment
 # More info: https://www.okteto.com/docs/reference/manifest/#dependencies
 # dependencies:
 #   - https://github.com/okteto/sample
+
+
 # The dev section defines how to activate a development container
 # More info: https://www.okteto.com/docs/reference/manifest/#dev
 dev:
-   converter:
-     image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
-     command: bash
-     workdir: /app
-     sync:
-       - ./converter:/app/converter
-
+  converter:
+    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+    command: nodemon --exec "python -m" converter -e py -V
+    workdir: /app
+    sync:
+      - ./converter:/app/converter
+    externalVolumes:
+      - datapipe-storage:/datapipe
+  fetcher:
+    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+    command: nodemon --exec "python -m" fetcher -e py -V
+    workdir: /app
+    sync:
+      - ./fetcher:/app/fetcher
+    externalVolumes:
+      - datapipe-storage:/datapipe
+  gender:
+    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+    command: nodemon --exec "python -m" gender -e py -V
+    workdir: /app
+    sync:
+      - ./gender:/app/gender
+    externalVolumes:
+      - datapipe-storage:/datapipe
+  preprocessor:
+    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+    command: nodemon --exec "python -m" preprocessor -e py -V
+    workdir: /app
+    sync:
+      - ./preprocessor:/app/preprocessor
+    externalVolumes:
+      - datapipe-storage:/datapipe
+  splitter:
+    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+    command: nodemon --exec "python -m" splitter -e py -V
+    workdir: /app
+    sync:
+      - ./splitter:/app/splitter
+    externalVolumes:
+      - datapipe-storage:/datapipe
+  vosk_vad_transcriber:
+    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+    command: nodemon --exec "python -m" vosk_vad_transcriber -e py -V
+    workdir: /app
+    sync:
+      - ./vosk_vad_transcriber:/app/vosk_vad_transcriber
+    externalVolumes:
+      - datapipe-storage:/datapipe
+#  wav2vec2_transcriber:
+#    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+#    command: nodemon --exec "python -m" wav2vec2_transcriber -e py -V
+#    workdir: /app
+#    sync:
+#      - ./wav2vec2_transcriber:/app/wav2vec2_transcriber
+#    externalVolumes:
+#      - datapipe-storage:/datapipe

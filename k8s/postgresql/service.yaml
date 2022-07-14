@@ -5,6 +5,7 @@ metadata:
   labels:
     project: datapipe
 spec:
+  type: LoadBalancer
   selector:
     app: datapipe-db
   ports:

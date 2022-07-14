@@ -5,10 +5,13 @@ authors:
   given-names: "Ciaran"
   email: "ciaran@oreilly.cat"
   website: "https://oreilly.cat"
+- family-names: "Petrea"
+  given-names: "Paul Andrei"
+  email: "paul.petrea@bsc.es"
 title: "Audio datapipe"
 type: "software"
 version: 1.0
 date-released: 2022-05-05
 license: APGL-3.0
 license-url: "https://www.gnu.org/licenses/agpl-3.0.en.html"
-url: "https://github.com/ccoreilly/datapipe"
+url: "https://github.com/projecte-aina/datapipe"

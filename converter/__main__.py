@@ -4,6 +4,8 @@ from subprocess import Popen, PIPE, run
 from time import sleep
 
 import traceback
+import sys
+
 
 from db import get_connection
 from utils import GracefulKiller
@@ -80,7 +82,7 @@ while not killer.kill_now:
             conn.commit()
     else:
         try:
-            print("123 No work, sleeping for 10s...")
+            print("No work, sleeping for 10s...")
             sleep(10)
         except KeyboardInterrupt:
             break
