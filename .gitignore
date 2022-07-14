@@ -5,7 +5,4 @@ __pycache__
 *.mp4
 media
 *.webm
-
-
-# Ignore DevSpace cache and log folder
-.devspace/
+.idea
