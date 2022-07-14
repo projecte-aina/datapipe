@@ -6,7 +6,6 @@ from time import sleep
 import traceback
 import sys
 
-
 from db import get_connection
 from utils import GracefulKiller
 
