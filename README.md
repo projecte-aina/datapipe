@@ -97,4 +97,4 @@ okteto up
 
 Licensed under the GNU Affero General Public License v3.0. [Copy of the license](LICENSE)
 
-This tool was initially built by the community and its further development and maintanence is being funded by the [Catalan Ministry of the Vice-presidency, Digital Policies and Territory of Generalitat](https://politiquesdigitals.gencat.cat/en/inici/index.html) within the framework of the [Aina project](https://politiquesdigitals.gencat.cat/ca/tic/aina-el-projecte-per-garantir-el-catala-en-lera-digital/).
+This tool was initially built by the community and its further development and maintanence is being funded by the [Catalan Ministry of the Vice-presidency, Digital Policies and Territory of Generalitat](https://politiquesdigitals.gencat.cat/en/inici/index.html) within the framework of [Projecte AINA](https://politiquesdigitals.gencat.cat/ca/tic/aina-el-projecte-per-garantir-el-catala-en-lera-digital/).
