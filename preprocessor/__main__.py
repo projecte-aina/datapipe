@@ -95,6 +95,8 @@ while not killer.kill_now:
                 yt = get_youtube(source_id, url)
                 new_status = "ready_for_download" if youtube_language_check(yt) else "bad_language"
                 license = "CC-BY" if youtube_license_check(yt) else "PROP"
+                if license == "PROP":
+                    new_status = "bad_license"
                 captions = 'ca' in yt.captions
                 cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}', has_captions='{captions}', status_update=now() WHERE source_id = '{source_id}'")
             except HTTPError as err:

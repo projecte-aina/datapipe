@@ -37,7 +37,7 @@ grpcio-tools==1.42.0
 h11==0.12.0
 httpcore==0.14.1
 httpx==0.21.0
-huggingface-hub==0.2.1
+huggingface-hub==0.8.1
 hydra-core==1.1.1
 idna==3.3
 importlib-metadata==4.10.0

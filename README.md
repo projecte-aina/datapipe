@@ -47,6 +47,22 @@ data:
   POSTGRES_PASSWORD: "cGFzc3dvcmQxMjMjJA=="
 ```
 
+[//]: # (## Setup database)
+
+[//]: # (Install krew package manager)
+
+[//]: # (https://krew.sigs.k8s.io/docs/user-guide/setup/install/)
+
+[//]: # ()
+[//]: # (Install schemahero)
+
+[//]: # (```bash)
+
+[//]: # (kubectl krew install schemahero)
+
+[//]: # (kubectl schemahero install)
+
+[//]: # (```)
 ## Deployment
 ```bash
 make deploy 
