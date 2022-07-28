@@ -45,12 +45,13 @@ def download_captions(yt):
 
     try:
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        captions = yt.captions['ca'].xml_captions
+        caption = yt.captions.get_by_language_code('ca')
+        xml_captions = caption.xml_captions
 
         with open(filepath, 'w') as f:
-            f.write(captions)
+            f.write(xml_captions)
 
-        if captions:
+        if caption:
             return filepath
     except Exception as ex:
         print(f"Downloading caption failed")
