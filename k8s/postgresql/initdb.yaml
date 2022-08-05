@@ -43,7 +43,7 @@ data:
     -- DROP TYPE public."source_type";
     
     CREATE TYPE public."source_type" AS ENUM (
-        'youtube');
+        'youtube', 'ccma');
     
     -- DROP TYPE public."variant_type";
     

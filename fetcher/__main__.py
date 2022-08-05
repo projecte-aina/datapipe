@@ -2,6 +2,8 @@ import os
 from os import getenv, path, remove
 from urllib.error import HTTPError
 from time import sleep
+
+import requests
 from pytube import YouTube
 import traceback
 
@@ -39,7 +41,23 @@ def youtube_download_audio(yt):
         return filepath
 
 
-def download_captions(yt):
+def download_source(url):
+    filename = url.split('/')[-1]
+    filepath = path.join(AUDIO_DOWNLOAD_PATH, filename)
+
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+    r = requests.get(url, stream=True)
+
+    with open(filepath, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024 * 1024):
+            if chunk:
+                f.write(chunk)
+
+    return filepath
+
+
+def download_yt_captions(yt):
     filename = f"{source_id}.xml"
     filepath = path.join(CAPTION_DOWNLOAD_PATH, filename)
 
@@ -51,6 +69,25 @@ def download_captions(yt):
         with open(filepath, 'w') as f:
             f.write(xml_captions)
 
+        if caption:
+            return filepath
+    except Exception as ex:
+        print(f"Downloading caption failed")
+        traceback.print_exc()
+
+
+def download_ccma_captions(url):
+    filename = f"{source_id}.xml"
+    filepath = path.join(CAPTION_DOWNLOAD_PATH, filename)
+
+    try:
+
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        r = requests.get(url, stream=True)
+        with open(filepath, "wb") as xml:
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk:
+                    xml.write(chunk)
         if caption:
             return filepath
     except Exception as ex:
@@ -73,12 +110,12 @@ while not killer.kill_now:
     FOR UPDATE SKIP LOCKED \
     LIMIT 1 \
     ) \
-    RETURNING has_captions, source_id, url, type;")
+    RETURNING has_captions, subtitlepath, source_id, url, type;")
     conn.commit()
     next = cur.fetchone()
 
     if next:
-        has_captions, source_id, url, type = next
+        has_captions, subtitlepath, source_id, url, type = next
         try:
             if type == "youtube":
                 yt = get_youtube(source_id, url)
@@ -89,7 +126,7 @@ while not killer.kill_now:
                         f"UPDATE sources SET status='audio_extracted', audiopath='{audiopath}', status_update=now() WHERE source_id = '{source_id}'")
                     if has_captions:
                         print(f"YT: Fetching captions {url} (id={source_id})")
-                        subtitlepath = download_captions(yt)
+                        subtitlepath = download_yt_captions(yt)
                         if subtitlepath:
                             cur.execute(
                                 f"UPDATE sources SET subtitlepath='{subtitlepath}', status_update=now() WHERE source_id = '{source_id}'")
@@ -98,7 +135,24 @@ while not killer.kill_now:
                     print("Fetching failed: no audio")
                     cur.execute(
                         f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
-
+            if type == "ccma":
+                audiopath = download_source(url)
+                if audiopath:
+                    print("CCMA: Fetching succeeded")
+                    print()
+                    cur.execute(
+                        f"UPDATE sources SET status='audio_extracted', audiopath='{audiopath}', status_update=now() WHERE source_id = '{source_id}'")
+                    # if has_captions:
+                    #     print(f"CCMA: Fetching captions {url} (id={source_id})")
+                    #     subtitlepath = download_captions(yt)
+                    #     if subtitlepath:
+                    #         cur.execute(
+                    #             f"UPDATE sources SET subtitlepath='{subtitlepath}', status_update=now() WHERE source_id = '{source_id}'")
+                    #         print("CCMA: Caption fetching succeeded")
+                else:
+                    print("CCMA: Fetching failed: no audio")
+                    cur.execute(
+                        f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
             else:
                 print(f"Unknown source type {type}!")
         except HTTPError as err:
