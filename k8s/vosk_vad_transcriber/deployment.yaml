@@ -26,7 +26,7 @@ spec:
           claimName: datapipe-storage-local
       containers:
         - name: vad-transcriber
-          image: paulandrei/datapipe:0.7.6
+          image: paulandrei/datapipe:0.7.7
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "vosk_vad_transcriber" ]
           volumeMounts:

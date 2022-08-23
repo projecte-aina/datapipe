@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: preprocessor
-          image: paulandrei/datapipe:0.7.6
+          image: paulandrei/datapipe:0.7.7
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "preprocessor" ]
           env:
