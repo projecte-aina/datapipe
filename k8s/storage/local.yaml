@@ -7,7 +7,15 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
+  storageClassName: retain-local-path
   resources:
     requests:
-      storage: 300Gi
+      storage: 4Ti
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: retain-local-path
+provisioner: rancher.io/local-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
