@@ -36,7 +36,7 @@ dev:
     sync:
       - ./converter:/app/converter
     externalVolumes:
-      - datapipe-storage:/datapipe
+      - datapipe-storage-local:/datapipe
   fetcher:
     image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
     command: nodemon --exec "python -m" fetcher -e py -V
@@ -44,7 +44,7 @@ dev:
     sync:
       - ./fetcher:/app/fetcher
     externalVolumes:
-      - datapipe-storage:/datapipe
+      - datapipe-storage-local:/datapipe
   gender:
     image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
     command: nodemon --exec "python -m" gender -e py -V
@@ -52,7 +52,7 @@ dev:
     sync:
       - ./gender:/app/gender
     externalVolumes:
-      - datapipe-storage:/datapipe
+      - datapipe-storage-local:/datapipe
   preprocessor:
     image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
     command: nodemon --exec "python -m" preprocessor -e py -V
@@ -60,7 +60,7 @@ dev:
     sync:
       - ./preprocessor:/app/preprocessor
     externalVolumes:
-      - datapipe-storage:/datapipe
+      - datapipe-storage-local:/datapipe
   splitter:
     image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
     command: nodemon --exec "python -m" splitter -e py -V
@@ -68,15 +68,15 @@ dev:
     sync:
       - ./splitter:/app/splitter
     externalVolumes:
-      - datapipe-storage:/datapipe
-  vosk_vad_transcriber:
-    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
-    command: nodemon --exec "python -m" vosk_vad_transcriber -e py -V
-    workdir: /app
-    sync:
-      - ./vosk_vad_transcriber:/app/vosk_vad_transcriber
-    externalVolumes:
-      - datapipe-storage:/datapipe
+      - datapipe-storage-local:/datapipe
+#  vosk_vad_transcriber:
+#    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+#    command: nodemon --exec "python -m" vosk_vad_transcriber -e py -V
+#    workdir: /app
+#    sync:
+#      - ./vosk_vad_transcriber:/app/vosk_vad_transcriber
+#    externalVolumes:
+#      - datapipe-storage-local:/datapipe
 #  wav2vec2_transcriber:
 #    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
 #    command: nodemon --exec "python -m" wav2vec2_transcriber -e py -V
@@ -84,4 +84,4 @@ dev:
 #    sync:
 #      - ./wav2vec2_transcriber:/app/wav2vec2_transcriber
 #    externalVolumes:
-#      - datapipe-storage:/datapipe
+#      - datapipe-storage-local:/datapipe
