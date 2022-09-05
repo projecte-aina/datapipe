@@ -11,8 +11,8 @@ resources:
   - grafana
   - postgresql
   - preprocessor
-  - splitter
   - storage
+#  - splitter
 #  - vosk
 #  - wav2vec2_service
 #  - vosk_vad_transcriber
