@@ -31,7 +31,8 @@ CREATE TYPE public."source_status" AS ENUM (
 	'vad_running',
 	'vad_done',
 	'splitting',
-	'splitting_done');
+	'splitting_done',
+    'age_restricted');
 
 -- DROP TYPE public."source_type";
 

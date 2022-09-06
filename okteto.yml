@@ -13,7 +13,7 @@ build:
   datapipe:
     context: .
     dockerfile: Dockerfile
-    image: paulandrei/datapipe:0.7.8
+    image: paulandrei/datapipe:0.7.8.2
 
 # The deploy section defines how to deploy your development environment
 # More info: https://www.okteto.com/docs/reference/manifest/#deploy
@@ -36,23 +36,16 @@ dev:
     sync:
       - ./converter:/app/converter
     externalVolumes:
-      - datapipe-storage-local:/datapipe
+      - datapipe-storage:/datapipe
   fetcher:
     image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
     command: nodemon --exec "python -m" fetcher -e py -V
     workdir: /app
     sync:
       - ./fetcher:/app/fetcher
+      - ./cli:/app/cli
     externalVolumes:
-      - datapipe-storage-local:/datapipe
-  gender:
-    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
-    command: nodemon --exec "python -m" gender -e py -V
-    workdir: /app
-    sync:
-      - ./gender:/app/gender
-    externalVolumes:
-      - datapipe-storage-local:/datapipe
+      - datapipe-storage:/datapipe
   preprocessor:
     image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
     command: nodemon --exec "python -m" preprocessor -e py -V
@@ -60,15 +53,23 @@ dev:
     sync:
       - ./preprocessor:/app/preprocessor
     externalVolumes:
-      - datapipe-storage-local:/datapipe
-  splitter:
-    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
-    command: nodemon --exec "python -m" splitter -e py -V
-    workdir: /app
-    sync:
-      - ./splitter:/app/splitter
-    externalVolumes:
-      - datapipe-storage-local:/datapipe
+      - datapipe-storage:/datapipe
+#  gender:
+#    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+#    command: nodemon --exec "python -m" gender -e py -V
+#    workdir: /app
+#    sync:
+#      - ./gender:/app/gender
+#    externalVolumes:
+#      - datapipe-storage:/datapipe
+#  splitter:
+#    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+#    command: nodemon --exec "python -m" splitter -e py -V
+#    workdir: /app
+#    sync:
+#      - ./splitter:/app/splitter
+#    externalVolumes:
+#      - datapipe-storage:/datapipe
 #  vosk_vad_transcriber:
 #    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
 #    command: nodemon --exec "python -m" vosk_vad_transcriber -e py -V
