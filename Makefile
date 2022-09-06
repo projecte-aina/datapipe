@@ -1,4 +1,4 @@
-VERSION ?= 0.7.6
+VERSION ?= 0.7.8
 GRPC_SOURCES = ./stt_grpc/stt_service_pb2.py ./stt_grpc/stt_service_pb2_grpc.py
 
 all: $(GRPC_SOURCES)

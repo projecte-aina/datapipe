@@ -12,8 +12,12 @@ from utils import GracefulKiller
 
 killer = GracefulKiller()
 
-AUDIO_DOWNLOAD_PATH = getenv("AUDIO_DOWNLOAD_PATH", "./audio")
-CAPTION_DOWNLOAD_PATH = getenv("CAPTION_DOWNLOAD_PATH", "./caption")
+YT_AUDIO_DOWNLOAD_PATH = getenv("YT_AUDIO_DOWNLOAD_PATH", "./audio/youtube")
+YT_CAPTION_DOWNLOAD_PATH = getenv("YT_CAPTION_DOWNLOAD_PATH", "./caption/youtube")
+CCMA_AUDIO_DOWNLOAD_PATH = getenv("CCMA_AUDIO_DOWNLOAD_PATH", "./audio/ccma")
+CCMA_VIDEO_DOWNLOAD_PATH = getenv("CCMA_VIDEO_DOWNLOAD_PATH", "./tmp/video/ccma")
+CCMA_CAPTION_DOWNLOAD_PATH = getenv("CCMA_CAPTION_DOWNLOAD_PATH", "./caption/ccma")
+
 youtube_wait = 5
 
 
@@ -33,17 +37,21 @@ def youtube_download_audio(yt):
         ext = stream.default_filename.split('.')[-1]
         filename = f"{source_id}.{ext}"
         filesize = stream.filesize
-        filepath = path.join(AUDIO_DOWNLOAD_PATH, filename)
-        stream.download(AUDIO_DOWNLOAD_PATH, filename, None)
+        filepath = path.join(YT_AUDIO_DOWNLOAD_PATH, filename)
+        stream.download(YT_AUDIO_DOWNLOAD_PATH, filename, None)
         if filesize != path.getsize(filepath):
             remove(filepath)
             raise FilesizeNotMatching
         return filepath
 
 
-def download_source(url):
-    filename = url.split('/')[-1]
-    filepath = path.join(AUDIO_DOWNLOAD_PATH, filename)
+def ccma_download_source(url, source_id):
+    print(f"CCMA: Fetching {url} (id={source_id})")
+    slited_filename = url.split('/')[-1]
+    ext = slited_filename.split('.')[-1]
+    filename = f"{source_id}.{ext}"
+
+    filepath = path.join(CCMA_VIDEO_DOWNLOAD_PATH, filename)
 
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
@@ -59,7 +67,7 @@ def download_source(url):
 
 def download_yt_captions(yt):
     filename = f"{source_id}.xml"
-    filepath = path.join(CAPTION_DOWNLOAD_PATH, filename)
+    filepath = path.join(YT_CAPTION_DOWNLOAD_PATH, filename)
 
     try:
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -76,20 +84,18 @@ def download_yt_captions(yt):
         traceback.print_exc()
 
 
-def download_ccma_captions(url):
+def ccma_download_captions(url, source_id):
     filename = f"{source_id}.xml"
-    filepath = path.join(CAPTION_DOWNLOAD_PATH, filename)
-
+    filepath = path.join(CCMA_CAPTION_DOWNLOAD_PATH, filename)
     try:
 
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         r = requests.get(url, stream=True)
         with open(filepath, "wb") as xml:
-            for chunk in r.iter_content(chunk_size=1024):
+            for chunk in r.iter_content(chunk_size=8192):
                 if chunk:
                     xml.write(chunk)
-        if caption:
-            return filepath
+        return filepath
     except Exception as ex:
         print(f"Downloading caption failed")
         traceback.print_exc()
@@ -136,19 +142,18 @@ while not killer.kill_now:
                     cur.execute(
                         f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
             if type == "ccma":
-                audiopath = download_source(url)
+                audiopath = ccma_download_source(url, source_id)
                 if audiopath:
                     print("CCMA: Fetching succeeded")
-                    print()
                     cur.execute(
                         f"UPDATE sources SET status='audio_extracted', audiopath='{audiopath}', status_update=now() WHERE source_id = '{source_id}'")
-                    # if has_captions:
-                    #     print(f"CCMA: Fetching captions {url} (id={source_id})")
-                    #     subtitlepath = download_captions(yt)
-                    #     if subtitlepath:
-                    #         cur.execute(
-                    #             f"UPDATE sources SET subtitlepath='{subtitlepath}', status_update=now() WHERE source_id = '{source_id}'")
-                    #         print("CCMA: Caption fetching succeeded")
+                    if has_captions:
+                        print(f"CCMA: Fetching captions {subtitlepath} (id={source_id})")
+                        subtitles = ccma_download_captions(subtitlepath, source_id)
+                        if subtitles:
+                            cur.execute(
+                                f"UPDATE sources SET subtitlepath='{subtitles}', status_update=now() WHERE source_id = '{source_id}'")
+                            print("CCMA: Caption fetching succeeded")
                 else:
                     print("CCMA: Fetching failed: no audio")
                     cur.execute(

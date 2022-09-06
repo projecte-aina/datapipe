@@ -13,7 +13,7 @@ build:
   datapipe:
     context: .
     dockerfile: Dockerfile
-    image: paulandrei/datapipe:0.7.6
+    image: paulandrei/datapipe:0.7.8
 
 # The deploy section defines how to deploy your development environment
 # More info: https://www.okteto.com/docs/reference/manifest/#deploy
@@ -53,7 +53,7 @@ dev:
     sync:
       - ./gender:/app/gender
     externalVolumes:
-      - datapipe-storage:/datapipe
+      - datapipe-storage-local:/datapipe
   preprocessor:
     image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
     command: nodemon --exec "python -m" preprocessor -e py -V
@@ -62,22 +62,22 @@ dev:
       - ./preprocessor:/app/preprocessor
     externalVolumes:
       - datapipe-storage:/datapipe
-  splitter:
-    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
-    command: nodemon --exec "python -m" splitter -e py -V
-    workdir: /app
-    sync:
-      - ./splitter:/app/splitter
-    externalVolumes:
-      - datapipe-storage:/datapipe
-  vosk_vad_transcriber:
-    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
-    command: nodemon --exec "python -m" vosk_vad_transcriber -e py -V
-    workdir: /app
-    sync:
-      - ./vosk_vad_transcriber:/app/vosk_vad_transcriber
-    externalVolumes:
-      - datapipe-storage:/datapipe
+#  splitter:
+#    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+#    command: nodemon --exec "python -m" splitter -e py -V
+#    workdir: /app
+#    sync:
+#      - ./splitter:/app/splitter
+#    externalVolumes:
+#      - datapipe-storage-local:/datapipe
+#  vosk_vad_transcriber:
+#    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
+#    command: nodemon --exec "python -m" vosk_vad_transcriber -e py -V
+#    workdir: /app
+#    sync:
+#      - ./vosk_vad_transcriber:/app/vosk_vad_transcriber
+#    externalVolumes:
+#      - datapipe-storage-local:/datapipe
 #  wav2vec2_transcriber:
 #    image: ${OKTETO_BUILD_DATAPIPE_IMAGE}
 #    command: nodemon --exec "python -m" wav2vec2_transcriber -e py -V
@@ -85,4 +85,4 @@ dev:
 #    sync:
 #      - ./wav2vec2_transcriber:/app/wav2vec2_transcriber
 #    externalVolumes:
-#      - datapipe-storage:/datapipe
+#      - datapipe-storage-local:/datapipe

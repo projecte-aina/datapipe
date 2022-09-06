@@ -26,7 +26,7 @@ spec:
           claimName: datapipe-storage-local
       containers:
         - name: fetcher
-          image: paulandrei/datapipe:0.7.6
+          image: paulandrei/datapipe:0.7.8
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "fetcher" ]
           volumeMounts:
@@ -37,10 +37,16 @@ spec:
               value: "1"
             - name: PG_HOST
               value: datapipe-db
-            - name: AUDIO_DOWNLOAD_PATH
-              value: /datapipe/audio
-            - name: CAPTION_DOWNLOAD_PATH
-              value: /datapipe/caption
+            - name: YT_AUDIO_DOWNLOAD_PATH
+              value: /datapipe/audio/youtube
+            - name: YT_CAPTION_DOWNLOAD_PATH
+              value: /datapipe/caption/youtube
+            - name: CCMA_AUDIO_DOWNLOAD_PATH
+              value: /datapipe/audio/ccma
+            - name: CCMA_VIDEO_DOWNLOAD_PATH
+              value: /datapipe/tmp/video/ccma
+            - name: CCMA_CAPTION_DOWNLOAD_PATH
+              value: /datapipe/caption/ccma
             - name: PG_PASSWORD
               valueFrom:
                 secretKeyRef:
