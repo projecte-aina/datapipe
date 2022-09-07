@@ -127,7 +127,7 @@ while not killer.kill_now:
                 yt = get_youtube(source_id, url)
                 audiopath = youtube_download_audio(yt)
                 if audiopath:
-                    print("Fetching succeeded")
+                    print("YT: Fetching succeeded")
                     cur.execute(
                         f"UPDATE sources SET status='audio_extracted', audiopath='{audiopath}', status_update=now() WHERE source_id = '{source_id}'")
                     if has_captions:
@@ -136,9 +136,9 @@ while not killer.kill_now:
                         if subtitlepath:
                             cur.execute(
                                 f"UPDATE sources SET subtitlepath='{subtitlepath}', status_update=now() WHERE source_id = '{source_id}'")
-                            print("Caption fetching succeeded")
+                            print("YT: Caption fetching succeeded")
                 else:
-                    print("Fetching failed: no audio")
+                    print("YT: Fetching failed: no audio")
                     cur.execute(
                         f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
             if type == "ccma":
@@ -175,8 +175,14 @@ while not killer.kill_now:
                 f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
             conn.commit()
             break
+        except KeyError as ke:
+            print(f"YT: Fetching failed")
+            if yt.age_restricted:
+                print("YT: Fetching failed video with age restriction")
+                cur.execute(f"UPDATE sources SET status='age_restricted', status_update=now() WHERE source_id = '{source_id}'")
+            traceback.print_exc()
         except Exception as ex:
-            print(f"Preprocessing failed")
+            print(f"Fetching failed")
             traceback.print_exc()
             cur.execute(
                 f"UPDATE sources SET status='ready_for_download', status_update=now() WHERE source_id = '{source_id}'")
