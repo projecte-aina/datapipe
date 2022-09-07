@@ -11,11 +11,11 @@ from utils import GracefulKiller
 
 killer = GracefulKiller()
 
-AUDIO_16_PATH = getenv("AUDIO_16_PATH", "./audio16")
+# AUDIO_16_PATH = getenv("AUDIO_16_PATH", "./audio16")
 CCMA_AUDIO_DOWNLOAD_PATH = getenv("CCMA_AUDIO_DOWNLOAD_PATH", "./audio/ccma")
 
-if not path.exists(AUDIO_16_PATH):
-    makedirs(AUDIO_16_PATH)
+# if not path.exists(AUDIO_16_PATH):
+#     makedirs(AUDIO_16_PATH)
 
 if not path.exists(CCMA_AUDIO_DOWNLOAD_PATH):
     makedirs(CCMA_AUDIO_DOWNLOAD_PATH)
@@ -31,21 +31,21 @@ def get_duration_and_sr(audiopath):
     return duration, sr
 
 
-def convert(source_id, audiopath):
-    print(f"CCMA: Converting {audiopath}")
-    audiopath16 = path.join(AUDIO_16_PATH, f"{source_id}.wav")
-    try:
-        duration, sr = get_duration_and_sr(audiopath)
-        result = run(['ffmpeg', '-y', '-i', audiopath, '-ac', '1', '-ar', '16000', '-f', 'wav', audiopath16],
-                     capture_output=True)
-        if result.returncode != 0:
-            print(f"ffmpeg command failed: {result.stderr.decode()}")
-            raise Exception
-        return (sr, duration, audiopath16)
-    except Exception as ex:
-        if path.isfile(audiopath16):
-            remove(audiopath16)
-        raise ex
+# def convert(source_id, audiopath):
+#     print(f"CCMA: Converting {audiopath}")
+#     audiopath16 = path.join(AUDIO_16_PATH, f"{source_id}.wav")
+#     try:
+#         duration, sr = get_duration_and_sr(audiopath)
+#         result = run(['ffmpeg', '-y', '-i', audiopath, '-ac', '1', '-ar', '16000', '-f', 'wav', audiopath16],
+#                      capture_output=True)
+#         if result.returncode != 0:
+#             print(f"ffmpeg command failed: {result.stderr.decode()}")
+#             raise Exception
+#         return (sr, duration, audiopath16)
+#     except Exception as ex:
+#         if path.isfile(audiopath16):
+#             remove(audiopath16)
+#         raise ex
 
 
 def ccma_convert(source_id, audiopath):
@@ -92,9 +92,9 @@ while not killer.kill_now:
         source_id, audiopath, type = next
         try:
             if type == "youtube":
-                sr, duration, audiopath16 = convert(source_id, audiopath)
+                sr, duration = get_duration_and_sr(audiopath)
                 cur.execute(
-                    f"UPDATE sources SET sr='{sr}', duration='{duration}', audiopath_16='{audiopath16}', status='audio_converted', status_update=now() WHERE source_id = '{source_id}'")
+                    f"UPDATE sources SET sr='{sr}', duration='{duration}', status='audio_converted', status_update=now() WHERE source_id = '{source_id}'")
             if type == "ccma":
                 convertedpath = ccma_convert(source_id, audiopath)
                 if convertedpath:
@@ -113,7 +113,7 @@ while not killer.kill_now:
             conn.commit()
             break
         except Exception as ex:
-            print(f"Preprocessing failed")
+            print(f"Converting failed")
             traceback.print_exc()
             cur.execute(
                 f"UPDATE sources SET status='audio_extracted', status_update=now() WHERE source_id = '{source_id}'")
