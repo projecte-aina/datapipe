@@ -10,7 +10,7 @@ spec:
   storageClassName: retain-local-path
   resources:
     requests:
-      storage: 4Ti
+      storage: 15850Gi
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
