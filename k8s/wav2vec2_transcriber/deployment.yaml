@@ -26,7 +26,7 @@ spec:
           claimName: datapipe-storage-local
       containers:
         - name: wav2vec2-transcriber
-          image: paulandrei/datapipe:0.7.8.2
+          image: paulandrei/datapipe:0.8.0
           imagePullPolicy: IfNotPresent
           command: [ "python", "-m", "wav2vec2_transcriber" ]
           volumeMounts:

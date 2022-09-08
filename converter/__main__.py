@@ -28,11 +28,11 @@ def get_duration_and_sr(audiopath):
     result = json.loads(stdout)
     duration = result['format']['duration']
     sr = result['streams'][0]['sample_rate']
-    return duration, sr
+    return sr, duration
 
 
 # def convert(source_id, audiopath):
-#     print(f"CCMA: Converting {audiopath}")
+#     print(f"YT: Converting {audiopath}")
 #     audiopath16 = path.join(AUDIO_16_PATH, f"{source_id}.wav")
 #     try:
 #         duration, sr = get_duration_and_sr(audiopath)
@@ -92,10 +92,12 @@ while not killer.kill_now:
         source_id, audiopath, type = next
         try:
             if type == "youtube":
+                print(f"YT: Converting {audiopath}")
                 sr, duration = get_duration_and_sr(audiopath)
                 cur.execute(
                     f"UPDATE sources SET sr='{sr}', duration='{duration}', status='audio_converted', status_update=now() WHERE source_id = '{source_id}'")
-            if type == "ccma":
+                print(f"YT: Converting succeeded")
+            elif type == "ccma":
                 convertedpath = ccma_convert(source_id, audiopath)
                 if convertedpath:
                     print(f"CCMA: Converting succeeded")
@@ -106,6 +108,8 @@ while not killer.kill_now:
                     print("CCMA: Converting failed: no audio")
                     cur.execute(
                         f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
+            else:
+                print(f"Unknown source type {type}!")
         except KeyboardInterrupt:
             print("Stopping")
             cur.execute(
