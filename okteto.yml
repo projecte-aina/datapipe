@@ -13,7 +13,7 @@ build:
   datapipe:
     context: .
     dockerfile: Dockerfile
-    image: paulandrei/datapipe:0.7.8.2
+    image: paulandrei/datapipe:0.8.0
 
 # The deploy section defines how to deploy your development environment
 # More info: https://www.okteto.com/docs/reference/manifest/#deploy

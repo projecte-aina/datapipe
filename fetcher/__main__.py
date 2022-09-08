@@ -134,14 +134,13 @@ while not killer.kill_now:
                         print(f"YT: Fetching captions {url} (id={source_id})")
                         subtitlepath = download_yt_captions(yt)
                         if subtitlepath:
-                            cur.execute(
-                                f"UPDATE sources SET subtitlepath='{subtitlepath}', status_update=now() WHERE source_id = '{source_id}'")
+                            cur.execute(f"UPDATE sources SET subtitlepath='{subtitlepath}', status_update=now() WHERE source_id = '{source_id}'")
                             print("YT: Caption fetching succeeded")
                 else:
                     print("YT: Fetching failed: no audio")
                     cur.execute(
                         f"UPDATE sources SET status='error', status_update=now() WHERE source_id = '{source_id}'")
-            if type == "ccma":
+            elif type == "ccma":
                 audiopath = ccma_download_source(url, source_id)
                 if audiopath:
                     print("CCMA: Fetching succeeded")
