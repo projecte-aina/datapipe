@@ -1,4 +1,5 @@
 import os
+import shutil
 from os import getenv, path, remove
 from urllib.error import HTTPError
 from time import sleep
@@ -44,7 +45,6 @@ def youtube_download_audio(yt):
             raise FilesizeNotMatching
         return filepath
 
-
 def ccma_download_source(url, source_id):
     print(f"CCMA: Fetching {url} (id={source_id})")
     slited_filename = url.split('/')[-1]
@@ -55,12 +55,14 @@ def ccma_download_source(url, source_id):
 
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
-    r = requests.get(url, stream=True)
+    with requests.get(url, stream=True) as r:
+        with open(filepath, 'wb') as f:
+            shutil.copyfileobj(r.raw, f)
 
-    with open(filepath, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024 * 1024):
-            if chunk:
-                f.write(chunk)
+    # with open(filepath, 'wb') as f:
+    #     for chunk in r.iter_content(chunk_size=1024 * 1024):
+    #         if chunk:
+    #             f.write(chunk)
 
     return filepath
 
@@ -90,11 +92,16 @@ def ccma_download_captions(url, source_id):
     try:
 
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        r = requests.get(url, stream=True)
-        with open(filepath, "wb") as xml:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    xml.write(chunk)
+
+        with requests.get(url, stream=True) as r:
+            with open(filepath, 'wb') as f:
+                shutil.copyfileobj(r.raw, f)
+
+        # r = requests.get(url, stream=True)
+        # with open(filepath, "wb") as xml:
+        #     for chunk in r.iter_content(chunk_size=8192):
+        #         if chunk:
+        #             xml.write(chunk)
         return filepath
     except Exception as ex:
         print(f"Downloading caption failed")
@@ -134,7 +141,8 @@ while not killer.kill_now:
                         print(f"YT: Fetching captions {url} (id={source_id})")
                         subtitlepath = download_yt_captions(yt)
                         if subtitlepath:
-                            cur.execute(f"UPDATE sources SET subtitlepath='{subtitlepath}', status_update=now() WHERE source_id = '{source_id}'")
+                            cur.execute(
+                                f"UPDATE sources SET subtitlepath='{subtitlepath}', status_update=now() WHERE source_id = '{source_id}'")
                             print("YT: Caption fetching succeeded")
                 else:
                     print("YT: Fetching failed: no audio")
@@ -178,7 +186,8 @@ while not killer.kill_now:
             print(f"YT: Fetching failed")
             if yt.age_restricted:
                 print("YT: Fetching failed video with age restriction")
-                cur.execute(f"UPDATE sources SET status='age_restricted', status_update=now() WHERE source_id = '{source_id}'")
+                cur.execute(
+                    f"UPDATE sources SET status='age_restricted', status_update=now() WHERE source_id = '{source_id}'")
             traceback.print_exc()
         except Exception as ex:
             print(f"Fetching failed")
