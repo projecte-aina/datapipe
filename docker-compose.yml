@@ -1,0 +1,228 @@
+services:
+
+  datapipe-db:
+    image: postgres:13.1
+    container_name: datapipe-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    expose:
+      - "5432"
+    networks:
+      - db-network
+    volumes:
+      - ./k8s/postgresql/sql/tables.sql:/docker-entrypoint-initdb.d/db.sql
+      - datapipe-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      
+  # datapipe-db-backup:
+  #   image: eeshugerman/postgres-backup-s3:16
+  #   environment:
+  #     SCHEDULE: ${SCHEDULE-@every 1h}
+  #     BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS-30}
+  #     S3_REGION: us-east-1
+  #     S3_ENDPOINT: ${S3_ENDPOINT}
+  #     S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+  #     S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+  #     S3_BUCKET: ${S3_BUCKET}
+  #     S3_PREFIX: ${S3_PREFIX-datapipe_db_backups}
+  #     POSTGRES_HOST: datapipe-db
+  #     POSTGRES_DATABASE: ${POSTGRES_DB}
+  #     POSTGRES_USER: ${POSTGRES_USER}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #   networks:
+  #     - db-network
+  #   depends_on:
+  #     datapipe-db:
+  #       condition: service_healthy
+
+  # datapipe-grafana:
+  #   image: grafana/grafana:7.5.4
+  #   container_name: datapipe-grafana
+  #   restart: unless-stopped
+  #   environment:
+  #     - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+  #     - GF_LOG_MODE=console
+  #     - GF_LOG_LEVEL=info
+  #   expose:
+  #     - "3000"
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+
+  # text2lang:
+  #   image: projecteaina/text2lang:latest
+  #   container_name: datapipe-text2lang
+  #   restart: unless-stopped
+  #   expose:
+  #     - "8000"
+
+  # preprocessor:
+  #     image: projecteaina/datapipe:latest
+  #     container_name: datapipe-preprocessor
+  #     restart: unless-stopped
+  #     volumes:
+  #       - datapipe-data:/datapipe
+  #     command: "python -m preprocessor"
+  #     environment:
+  #       - PYTHONUNBUFFERED=1
+  #       - PG_HOST=datapipe-db
+  #       - PG_PASSWORD=${POSTGRES_PASSWORD}
+  #       - API_URL=http://text2lang:80/text2lang
+  #     networks:
+  #       - db-network
+  #     depends_on:
+  #       datapipe-db:
+  #         condition: service_healthy
+
+  fetcher:
+    image: projecteaina/datapipe:latest
+    restart: unless-stopped
+    volumes:
+      - datapipe-data:/datapipe
+    command: "fetcher"
+    deploy:
+      mode: replicated
+      replicas: 2
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PG_HOST=datapipe-db
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - YT_AUDIO_DOWNLOAD_PATH=/datapipe/audio/youtube
+      - YT_CAPTION_DOWNLOAD_PATH=/datapipe/caption/youtube
+      - CCMA_AUDIO_DOWNLOAD_PATH=/datapipe/audio/ccma
+      - CCMA_VIDEO_DOWNLOAD_PATH=/datapipe/tmp/video/ccma
+      - CCMA_CAPTION_DOWNLOAD_PATH=/datapipe/caption/ccma
+    networks:
+      - db-network
+    depends_on:
+      datapipe-db:
+        condition: service_healthy
+
+  # converter:
+  #   image: projecteaina/datapipe:latest
+  #   container_name: datapipe-converter
+  #   restart: unless-stopped
+  #   volumes:
+  #     - datapipe-data:/datapipe
+  #   command: "python -m converter"
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - PG_HOST=datapipe-db
+  #     - AUDIO_16_PATH=/datapipe/audio16
+  #     - CCMA_AUDIO_DOWNLOAD_PATH=/datapipe/audio/ccma
+  #     - CCMA_VIDEO_DOWNLOAD_PATH=/datapipe/tmp/video/ccma
+  #     - PG_PASSWORD=${POSTGRES_PASSWORD}
+  #   networks:
+  #     - db-network
+  #   depends_on:
+  #     datapipe-db:
+  #       condition: service_healthy
+
+  # vad-transcriber:
+  #     image: projecteaina/datapipe:latest
+  #     container_name: datapipe-vad-transcriber
+  #     restart: unless-stopped
+  #     volumes:
+  #       - datapipe-data:/datapipe
+  #     command: "python -m vosk_vad_transcriber"
+  #     environment:
+  #       - PYTHONUNBUFFERED=1
+  #       - PG_HOST=datapipe-db
+  #       - PG_PASSWORD=${POSTGRES_PASSWORD}
+  #       - VOSK_SERVER_HOST=ona-vosk
+  #     networks:
+  #       - db-network
+  #     depends_on:
+  #       datapipe-db:
+  #         condition: service_healthy
+
+  # gender:
+  #     image: projecteaina/datapipe:latest
+  #     container_name: datapipe-gender
+  #     restart: unless-stopped
+  #     volumes:
+  #       - datapipe-data:/datapipe
+  #     command: "python -m gender"
+  #     environment:
+  #       - PYTHONUNBUFFERED=1
+  #       - PG_HOST=datapipe-db
+  #       - PG_PASSWORD=${POSTGRES_PASSWORD}
+  #       - CLIPS_PATH= /datapipe/clips
+  #     networks:
+  #       - db-network
+  #     depends_on:
+  #       datapipe-db:
+  #         condition: service_healthy
+
+  # splitter:
+  #     image: projecteaina/datapipe:latest
+  #     container_name: datapipe-splitter
+  #     restart: unless-stopped
+  #     volumes:
+  #       - datapipe-data:/datapipe
+  #     command: "python -m splitter"
+  #     environment:
+  #       - PYTHONUNBUFFERED=1
+  #       - PG_HOST=datapipe-db
+  #       - PG_PASSWORD=${POSTGRES_PASSWORD}
+  #       - CLIPS_PATH= /datapipe/clips
+  #     networks:
+  #       - db-network
+  #     depends_on:
+  #       datapipe-db:
+  #         condition: service_healthy
+ 
+  # ona-vosk:
+  #   image: assistent/kaldi-catala:0.0.4
+  #   container_name: ona-vosk
+  #   restart: unless-stopped
+  #   environment:
+  #     - VOSK_SAMPLE_RATE=16000
+  #   expose:
+  #     - "5001"
+
+  # wav2vec2-catala:
+  #   image: ghcr.io/ccoreilly/wav2vec2-catala-onnx:0.1.1
+  #   container_name: wav2vec2-catala
+  #   restart: unless-stopped
+  #   expose:
+  #     - "8000"
+
+  # wav2vec2-transcriber:
+  #   image: projecteaina/datapipe:latest
+  #   container_name: datapipe-wav2vec2-transcriber
+  #   restart: unless-stopped
+  #   volumes:
+  #     - datapipe-data:/datapipe
+  #   command: "python -m wav2vec2_transcriber"
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - PG_HOST=datapipe-db
+  #     - PG_PASSWORD=${POSTGRES_PASSWORD}
+  #     - API_URL=http://wav2vec2-catala/recognize
+  #   networks:
+  #     - db-network
+  #   depends_on:
+  #     datapipe-db:
+  #       condition: service_healthy
+
+
+volumes:
+ datapipe-data:
+ datapipe-db-data:
+ grafana-data:
+
+networks:
+  db-network:
+    # driver_opts:
+    #   com.docker.network.driver.mtu: ${NETWORK_MTU}

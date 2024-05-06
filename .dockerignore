@@ -9,3 +9,5 @@ k8s
 *.webm
 .gitignore
 .dockerignore
+.env
+.github

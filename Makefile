@@ -10,13 +10,22 @@ clean:
 	rm $(GRPC_SOURCES)
 
 build:
-	docker build . -t paulandrei/datapipe:${VERSION}
+	docker build . -t projecteaina/datapipe:${VERSION}
 
 push: build
-	docker push paulandrei/datapipe:${VERSION}
+	docker push projecteaina/datapipe:${VERSION}
 
 deploy:
 	kustomize build k8s | kubectl apply -f -
 
 undeploy:
 	kustomize build k8s | kubectl delete -f -
+
+deploy-docker:
+	docker compose --env-file .env up
+
+undeploy-docker:
+	docker compose down
+
+stop-docker:
+	docker compose stop
