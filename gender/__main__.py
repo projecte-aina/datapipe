@@ -1,4 +1,4 @@
-from os import getenv, path
+from os import getenv, path, makedirs
 import sys
 from joblib import load
 from time import sleep
@@ -20,7 +20,7 @@ CLIPS_PATH = getenv("CLIPS_PATH", "./clips")
 
 if not path.exists(CLIPS_PATH):
     print(f"Clips path {CLIPS_PATH} does not exist!")
-    sys.exit(1)
+    makedirs(path.dirname(CLIPS_PATH), exist_ok=True)
 
 MFCC_MIN_FREQUENCY = 60
 MFCC_MAX_FREQUENCY = 8_000

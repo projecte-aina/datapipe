@@ -63,26 +63,32 @@ services:
     image: projecteaina/text2lang:latest
     container_name: datapipe-text2lang
     restart: unless-stopped
+    networks:
+      - text2lang-net
     expose:
       - "8000"
 
   preprocessor:
       image: projecteaina/datapipe:latest
-      container_name: datapipe-preprocessor
       restart: unless-stopped
       volumes:
         - datapipe-data:/datapipe
-      command: "python -m preprocessor"
+      command: "preprocessor"
+      deploy:
+        mode: replicated
+        replicas: 1
       environment:
         - PYTHONUNBUFFERED=1
         - PG_HOST=datapipe-db
         - PG_PASSWORD=${POSTGRES_PASSWORD}
-        - API_URL=http://text2lang:80/text2lang
+        - API_URL=http://text2lang:8000/text2lang
+        - SKIP_LICENSE_CHECK=${SKIP_LICENSE_CHECK}
       networks:
         - db-network
+        - text2lang-net
       depends_on:
         datapipe-db:
-          condition: service_healthy
+            condition: service_healthy
 
   fetcher:
     image: projecteaina/datapipe:latest
@@ -110,11 +116,13 @@ services:
 
   converter:
     image: projecteaina/datapipe:latest
-    container_name: datapipe-converter
     restart: unless-stopped
     volumes:
       - datapipe-data:/datapipe
-    command: "python -m converter"
+    command: "converter"
+    deploy:
+      mode: replicated
+      replicas: 1
     environment:
       - PYTHONUNBUFFERED=1
       - PG_HOST=datapipe-db
@@ -130,11 +138,13 @@ services:
 
   # vad-transcriber:
   #     image: projecteaina/datapipe:latest
-  #     container_name: datapipe-vad-transcriber
   #     restart: unless-stopped
   #     volumes:
   #       - datapipe-data:/datapipe
-  #     command: "python -m vosk_vad_transcriber"
+  #     command: "vosk_vad_transcriber"
+      # deploy:
+        # mode: replicated
+        # replicas: 1
   #     environment:
   #       - PYTHONUNBUFFERED=1
   #       - PG_HOST=datapipe-db
@@ -142,35 +152,40 @@ services:
   #       - VOSK_SERVER_HOST=ona-vosk
   #     networks:
   #       - db-network
+  #       - ona-vosk-net
   #     depends_on:
   #       datapipe-db:
   #         condition: service_healthy
 
-  gender:
-      image: projecteaina/datapipe:latest
-      container_name: datapipe-gender
-      restart: unless-stopped
-      volumes:
-        - datapipe-data:/datapipe
-      command: "python -m gender"
-      environment:
-        - PYTHONUNBUFFERED=1
-        - PG_HOST=datapipe-db
-        - PG_PASSWORD=${POSTGRES_PASSWORD}
-        - CLIPS_PATH= /datapipe/clips
-      networks:
-        - db-network
-      depends_on:
-        datapipe-db:
-          condition: service_healthy
-
-  # splitter:
+  # gender:
   #     image: projecteaina/datapipe:latest
-  #     container_name: datapipe-splitter
   #     restart: unless-stopped
   #     volumes:
   #       - datapipe-data:/datapipe
-  #     command: "python -m splitter"
+  #     command: "gender"
+  #     deploy:
+  #       mode: replicated
+  #       replicas: 1
+  #     environment:
+  #       - PYTHONUNBUFFERED=1
+  #       - PG_HOST=datapipe-db
+  #       - PG_PASSWORD=${POSTGRES_PASSWORD}
+  #       - CLIPS_PATH= /datapipe/clips
+  #     networks:
+  #       - db-network
+  #     depends_on:
+  #       datapipe-db:
+  #         condition: service_healthy
+
+  # splitter:
+  #     image: projecteaina/datapipe:latest
+  #     restart: unless-stopped
+  #     volumes:
+  #       - datapipe-data:/datapipe
+  #     command: "splitter"
+        # deploy:
+        #   mode: replicated
+        #   replicas: 1
   #     environment:
   #       - PYTHONUNBUFFERED=1
   #       - PG_HOST=datapipe-db
@@ -184,10 +199,11 @@ services:
  
   # ona-vosk:
   #   image: assistent/kaldi-catala:0.0.4
-  #   container_name: ona-vosk
   #   restart: unless-stopped
   #   environment:
   #     - VOSK_SAMPLE_RATE=16000
+  #   networks:
+  #     - ona-vosk-net
   #   expose:
   #     - "5001"
 
@@ -195,16 +211,20 @@ services:
   #   image: ghcr.io/ccoreilly/wav2vec2-catala-onnx:0.1.1
   #   container_name: wav2vec2-catala
   #   restart: unless-stopped
+  #   networks:
+  #     - wav2vec2-net
   #   expose:
   #     - "8000"
 
   # wav2vec2-transcriber:
   #   image: projecteaina/datapipe:latest
-  #   container_name: datapipe-wav2vec2-transcriber
   #   restart: unless-stopped
   #   volumes:
   #     - datapipe-data:/datapipe
-  #   command: "python -m wav2vec2_transcriber"
+  #   command: "wav2vec2_transcriber"
+      # deploy:
+      #   mode: replicated
+      #   replicas: 1
   #   environment:
   #     - PYTHONUNBUFFERED=1
   #     - PG_HOST=datapipe-db
@@ -212,10 +232,10 @@ services:
   #     - API_URL=http://wav2vec2-catala/recognize
   #   networks:
   #     - db-network
+  #     - wav2vec2-net
   #   depends_on:
   #     datapipe-db:
   #       condition: service_healthy
-
 
 volumes:
  datapipe-data:
@@ -223,6 +243,9 @@ volumes:
  grafana-data:
 
 networks:
+  # wav2vec2-net:
+  # ona-vosk-net:
+  text2lang-net:
   db-network:
     # driver_opts:
     #   com.docker.network.driver.mtu: ${NETWORK_MTU}

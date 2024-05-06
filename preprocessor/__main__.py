@@ -1,6 +1,5 @@
 from os import getenv
 from time import sleep
-from pytube import YouTube
 from urllib.error import HTTPError
 
 import json
@@ -10,11 +9,22 @@ import traceback
 from db import get_connection
 from utils import GracefulKiller
 
+from pytube import YouTube
+# from pytube.innertube import _default_clients
+
+# _default_clients["ANDROID"]["context"]["client"]["clientVersion"] = "19.08.35"
+# _default_clients["IOS"]["context"]["client"]["clientVersion"] = "19.08.35"
+# _default_clients["ANDROID_EMBED"]["context"]["client"]["clientVersion"] = "19.08.35"
+# _default_clients["IOS_EMBED"]["context"]["client"]["clientVersion"] = "19.08.35"
+# _default_clients["IOS_MUSIC"]["context"]["client"]["clientVersion"] = "6.41"
+# _default_clients["ANDROID_MUSIC"] = _default_clients["ANDROID_CREATOR"]
+
 killer = GracefulKiller()
 
 API_TOKEN = getenv("API_TOKEN")
 API_URL = getenv("API_URL", "https://api-inference.huggingface.co/models/ivanlau/language-detection-fine-tuned-on-xlm-roberta-base")
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
+SKIP_LICENSE_CHECK = getenv("SKIP_LICENSE_CHECK", 'False').lower() in ('true', '1', 't')
 
 youtube_wait = 5
 
@@ -94,8 +104,11 @@ while not killer.kill_now:
             try:
                 yt = get_youtube(source_id, url)
                 new_status = "ready_for_download" if youtube_language_check(yt) else "bad_language"
+                if new_status == "bad_language":
+                    print(f"Bad language: {url}")
                 license = "CC-BY" if youtube_license_check(yt) else "PROP"
-                if license == "PROP":
+                if license == "PROP" and not SKIP_LICENSE_CHECK:
+                    print(f"Bad licence (not CC-BY): {url} ")
                     new_status = "bad_license"
                 captions = 'ca' in yt.captions
                 cur.execute(f"UPDATE sources SET status='{new_status}', license='{license}', has_captions='{captions}', status_update=now() WHERE source_id = '{source_id}'")
