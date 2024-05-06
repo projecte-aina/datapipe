@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: text2lang
-          image: paulandrei/text2lang:0.1.2
+          image: projecteaina/text2lang:08f6f8bb4c9d4680db967c59cf608c8318733969
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:

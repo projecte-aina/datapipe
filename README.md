@@ -70,7 +70,7 @@ make deploy
 
 ## Start using datapipe
 
-Access to any pod that was set up using paulandrei/datapipe image (example: converter-, fetcher-.. )
+Access to any pod that was set up using projecteaina/datapipe image (example: converter-, fetcher-.. )
 ```bash
 kubectl -n assistent exec -it fetcher-YOUR_POD_ID bash
 ```
