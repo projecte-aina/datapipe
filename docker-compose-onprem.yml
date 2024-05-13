@@ -25,26 +25,26 @@ services:
       timeout: 5s
       retries: 5
       
-  # datapipe-db-backup:
-  #   image: eeshugerman/postgres-backup-s3:13
-  #   environment:
-  #     SCHEDULE: ${SCHEDULE-@every 1h}
-  #     BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS-30}
-  #     S3_REGION: us-east-1
-  #     S3_ENDPOINT: ${S3_ENDPOINT}
-  #     S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-  #     S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
-  #     S3_BUCKET: ${S3_BUCKET}
-  #     S3_PREFIX: ${S3_PREFIX-datapipe_db_backups}
-  #     POSTGRES_HOST: datapipe-db
-  #     POSTGRES_DATABASE: ${POSTGRES_DB}
-  #     POSTGRES_USER: ${POSTGRES_USER}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #   networks:
-  #     - db-network
-  #   depends_on:
-  #     datapipe-db:
-  #       condition: service_healthy
+  datapipe-db-backup:
+    image: eeshugerman/postgres-backup-s3:13
+    environment:
+      SCHEDULE: ${SCHEDULE-@every 1h}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS-30}
+      S3_REGION: us-east-1
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_PREFIX: ${S3_PREFIX-datapipe_db_backups}
+      POSTGRES_HOST: datapipe-db
+      POSTGRES_DATABASE: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - db-network
+    depends_on:
+      datapipe-db:
+        condition: service_healthy
 
   datapipe-grafana:
     image: grafana/grafana:7.5.4
@@ -75,7 +75,7 @@ services:
       image: projecteaina/datapipe:latest
       restart: unless-stopped
       volumes:
-        - datapipe-data:/datapipe
+        - ${HOST_PATH}:/datapipe
       command: "preprocessor"
       deploy:
         mode: replicated
@@ -97,7 +97,7 @@ services:
     image: projecteaina/datapipe:latest
     restart: unless-stopped
     volumes:
-      - datapipe-data:/datapipe
+      - ${HOST_PATH}:/datapipe
     command: "fetcher"
     deploy:
       mode: replicated
@@ -121,7 +121,7 @@ services:
     image: projecteaina/datapipe:latest
     restart: unless-stopped
     volumes:
-      - datapipe-data:/datapipe
+      - ${HOST_PATH}:/datapipe
     command: "converter"
     deploy:
       mode: replicated
@@ -143,7 +143,7 @@ services:
   #     image: projecteaina/datapipe:latest
   #     restart: unless-stopped
   #     volumes:
-  #       - datapipe-data:/datapipe
+  #       - ${HOST_PATH}:/datapipe
   #     command: "vosk_vad_transcriber"
       # deploy:
         # mode: replicated
@@ -164,7 +164,7 @@ services:
   #     image: projecteaina/datapipe:latest
   #     restart: unless-stopped
   #     volumes:
-  #       - datapipe-data:/datapipe
+  #       - ${HOST_PATH}:/datapipe
   #     command: "gender"
   #     deploy:
   #       mode: replicated
@@ -184,7 +184,7 @@ services:
   #     image: projecteaina/datapipe:latest
   #     restart: unless-stopped
   #     volumes:
-  #       - datapipe-data:/datapipe
+  #       - ${HOST_PATH}:/datapipe
   #     command: "splitter"
         # deploy:
         #   mode: replicated
@@ -223,7 +223,7 @@ services:
   #   image: projecteaina/datapipe:latest
   #   restart: unless-stopped
   #   volumes:
-  #     - datapipe-data:/datapipe
+  #     - ${HOST_PATH}:/datapipe
   #   command: "wav2vec2_transcriber"
       # deploy:
       #   mode: replicated
@@ -241,7 +241,6 @@ services:
   #       condition: service_healthy
 
 volumes:
- datapipe-data:
  datapipe-db-data:
  grafana-data:
 
