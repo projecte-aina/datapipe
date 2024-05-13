@@ -46,21 +46,21 @@ services:
       datapipe-db:
         condition: service_healthy
 
-  datapipe-grafana:
-    image: grafana/grafana:7.5.4
-    container_name: datapipe-grafana
-    restart: unless-stopped
-    environment:
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
-      - GF_LOG_MODE=console
-      - GF_LOG_LEVEL=info
-    networks:
-      - proxy-net
-      - db-network
-    expose:
-      - "3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
+  # datapipe-grafana:
+  #   image: grafana/grafana:7.5.4
+  #   container_name: datapipe-grafana
+  #   restart: unless-stopped
+  #   environment:
+  #     - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+  #     - GF_LOG_MODE=console
+  #     - GF_LOG_LEVEL=info
+  #   networks:
+  #     # - proxy-net
+  #     - db-network
+  #   expose:
+  #     - "3000"
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
 
   text2lang:
     image: projecteaina/text2lang:latest
@@ -247,8 +247,8 @@ volumes:
 networks:
   # wav2vec2-net:
   # ona-vosk-net:
-  proxy-net:
-    external: true
+  # proxy-net:
+  #   external: true
   text2lang-net:
   db-network:
     # driver_opts:
