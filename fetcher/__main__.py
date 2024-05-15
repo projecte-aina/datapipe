@@ -6,6 +6,10 @@ from time import sleep
 
 import requests
 from pytube import YouTube
+from pytube.innertube import _default_clients
+
+_default_clients["ANDROID_MUSIC"] = _default_clients["ANDROID"]
+
 import traceback
 
 from db import get_connection
