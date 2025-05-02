@@ -1,4 +1,4 @@
-from pytube import Channel
+from pytubefix import Channel
 from db import get_connection
 import traceback
 

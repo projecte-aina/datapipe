@@ -1,5 +1,5 @@
 from time import sleep
-from pytube import YouTube
+from pytubefix import YouTube
 
 import traceback
 

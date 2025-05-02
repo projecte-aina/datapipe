@@ -5,8 +5,8 @@ from urllib.error import HTTPError
 from time import sleep
 
 import requests
-from pytube import YouTube
-from pytube.innertube import _default_clients
+from pytubefix import YouTube
+from pytubefix.innertube import _default_clients
 
 _default_clients["ANDROID_MUSIC"] = _default_clients["ANDROID"]
 

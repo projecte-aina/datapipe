@@ -9,8 +9,8 @@ import traceback
 from db import get_connection
 from utils import GracefulKiller
 
-from pytube import YouTube
-from pytube.innertube import _default_clients
+from pytubefix import YouTube
+from pytubefix.innertube import _default_clients
 
 _default_clients["ANDROID_MUSIC"] = _default_clients["ANDROID"]
 

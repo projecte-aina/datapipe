@@ -1,4 +1,4 @@
-from pytube import Playlist
+from pytubefix import Playlist
 from db import get_connection
 import traceback
 
