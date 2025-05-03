@@ -80,7 +80,7 @@
     -- public.clips definition
     
     -- Drop table
-    
+
     -- DROP TABLE public.clips;
     
     CREATE TABLE public.clips (
@@ -141,8 +141,36 @@
         clip_id uuid NULL,
         CONSTRAINT variants_pkey PRIMARY KEY (variant_id)
     );
-    
-    
+
+UPDATE sources
+   SET url = 'https://www.youtube.com/watch?v=' ||
+             regexp_replace(url,
+                            '.*videoId=([A-Za-z0-9_-]{11}).*',
+                            '\1')
+ WHERE url !~* '^https?://';
+
+-- == Auto-sanitize future inserts/updates ==
+CREATE OR REPLACE FUNCTION fix_source_url()
+RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+  IF NEW.url !~* '^https?://' THEN
+    NEW.url := 'https://www.youtube.com/watch?v=' ||
+               regexp_replace(NEW.url,
+                              '.*videoId=([A-Za-z0-9_-]{11}).*',
+                              '\1');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_fix_url ON sources;
+CREATE TRIGGER trg_fix_url
+  BEFORE INSERT OR UPDATE ON sources
+  FOR EACH ROW
+  EXECUTE FUNCTION fix_source_url();
+
     -- public.clips foreign keys
     
     ALTER TABLE public.clips ADD CONSTRAINT clips_source_id_fkey FOREIGN KEY (source_id) REFERENCES public.sources(source_id);

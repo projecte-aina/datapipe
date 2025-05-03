@@ -10,7 +10,10 @@ def add_yt_channel(channel):
         c = Channel(channel)
         print(f"Importing {len(c.video_urls)} videos")
         for url in c.video_urls:
-            cur.execute("INSERT INTO sources (url, type) VALUES (%s,%s)", (url, "youtube"))
+            cur.execute(
+                "INSERT INTO sources (url, type) VALUES (%s,%s)",
+                (str(url), "youtube")  # <-- cast to plain text
+            )
             conn.commit()
         print("Finished importing")
     except Exception:
