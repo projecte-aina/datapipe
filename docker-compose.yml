@@ -1,5 +1,9 @@
-services:
+version: "3.9"
 
+###############################################################################
+# Services
+###############################################################################
+services:
   datapipe-db:
     image: postgres:13.1
     container_name: datapipe-db
@@ -16,35 +20,10 @@ services:
       - ./k8s/postgresql/sql/tables.sql:/docker-entrypoint-initdb.d/db.sql
       - datapipe-db-data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
-      
-  # datapipe-db-backup:
-  #   image: eeshugerman/postgres-backup-s3:13
-  #   environment:
-  #     SCHEDULE: ${SCHEDULE-@every 1h}
-  #     BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS-30}
-  #     S3_REGION: us-east-1
-  #     S3_ENDPOINT: ${S3_ENDPOINT}
-  #     S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-  #     S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
-  #     S3_BUCKET: ${S3_BUCKET}
-  #     S3_PREFIX: ${S3_PREFIX-datapipe_db_backups}
-  #     POSTGRES_HOST: datapipe-db
-  #     POSTGRES_DATABASE: ${POSTGRES_DB}
-  #     POSTGRES_USER: ${POSTGRES_USER}
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #   networks:
-  #     - db-network
-  #   depends_on:
-  #     datapipe-db:
-  #       condition: service_healthy
 
   datapipe-grafana:
     image: grafana/grafana:7.5.4
@@ -72,33 +51,33 @@ services:
       - "8000"
 
   preprocessor:
-      image: projecteaina/datapipe:latest
-      restart: unless-stopped
-      volumes:
-        - datapipe-data:/datapipe
-      command: "preprocessor"
-      deploy:
-        mode: replicated
-        replicas: 1
-      environment:
-        - PYTHONUNBUFFERED=1
-        - PG_HOST=datapipe-db
-        - PG_PASSWORD=${POSTGRES_PASSWORD}
-        - API_URL=http://text2lang:8000/text2lang
-        - SKIP_LICENSE_CHECK=${SKIP_LICENSE_CHECK}
-      networks:
-        - db-network
-        - text2lang-net
-      depends_on:
-        datapipe-db:
-            condition: service_healthy
+    image: projecteaina/datapipe:latest
+    restart: unless-stopped
+    command: "preprocessor"
+    volumes:
+      - datapipe-data:/datapipe
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PG_HOST=datapipe-db
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - API_URL=http://text2lang:8000/text2lang
+      - SKIP_LICENSE_CHECK=${SKIP_LICENSE_CHECK}
+    networks:
+      - db-network
+      - text2lang-net
+    depends_on:
+      datapipe-db:
+        condition: service_healthy
 
   fetcher:
     image: projecteaina/datapipe:latest
     restart: unless-stopped
+    command: "fetcher"
     volumes:
       - datapipe-data:/datapipe
-    command: "fetcher"
     deploy:
       mode: replicated
       replicas: 2
@@ -118,14 +97,19 @@ services:
         condition: service_healthy
 
   converter:
-    image: projecteaina/datapipe:latest
-    restart: unless-stopped
+    # replace or comment‑out the existing image line 👇
+    # image: projecteaina/datapipe:latest
+
+    # point Compose at your local Dockerfile
+    build:
+      context: .          # repository root (contains Dockerfile)
+      dockerfile: Dockerfile
+    image: datapipe-converter:local   # give the image a new tag
+
+    command: "converter"
     volumes:
       - datapipe-data:/datapipe
-    command: "converter"
-    deploy:
-      mode: replicated
-      replicas: 1
+      - ./audio16:/datapipe/audio16
     environment:
       - PYTHONUNBUFFERED=1
       - PG_HOST=datapipe-db
@@ -139,118 +123,73 @@ services:
       datapipe-db:
         condition: service_healthy
 
-  # vad-transcriber:
-  #     image: projecteaina/datapipe:latest
-  #     restart: unless-stopped
-  #     volumes:
-  #       - datapipe-data:/datapipe
-  #     command: "vosk_vad_transcriber"
-      # deploy:
-        # mode: replicated
-        # replicas: 1
-  #     environment:
-  #       - PYTHONUNBUFFERED=1
-  #       - PG_HOST=datapipe-db
-  #       - PG_PASSWORD=${POSTGRES_PASSWORD}
-  #       - VOSK_SERVER_HOST=ona-vosk
-  #     networks:
-  #       - db-network
-  #       - ona-vosk-net
-  #     depends_on:
-  #       datapipe-db:
-  #         condition: service_healthy
+  ona-vosk:
+    image: assistent/kaldi-catala:0.0.4
+    restart: unless-stopped
+    environment:
+      - VOSK_SAMPLE_RATE=16000
+    expose:
+      - "5001"
+    networks:
+      - ona-vosk-net
 
-  # gender:
-  #     image: projecteaina/datapipe:latest
-  #     restart: unless-stopped
-  #     volumes:
-  #       - datapipe-data:/datapipe
-  #     command: "gender"
-  #     deploy:
-  #       mode: replicated
-  #       replicas: 1
-  #     environment:
-  #       - PYTHONUNBUFFERED=1
-  #       - PG_HOST=datapipe-db
-  #       - PG_PASSWORD=${POSTGRES_PASSWORD}
-  #       - CLIPS_PATH= /datapipe/clips
-  #     networks:
-  #       - db-network
-  #     depends_on:
-  #       datapipe-db:
-  #         condition: service_healthy
+  vad-transcriber:
+    image: projecteaina/datapipe:latest
+    restart: unless-stopped
+    command: "vosk_vad_transcriber"
+    volumes:
+      - datapipe-data:/datapipe
+      - ./audio16:/datapipe/audio16
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PG_HOST=datapipe-db
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - VOSK_SERVER_HOST=ona-vosk
+      - VOSK_SERVER_PORT=5001
+    networks:
+      - db-network
+      - ona-vosk-net
+    depends_on:
+      datapipe-db:
+        condition: service_healthy
+      ona-vosk:
+        condition: service_started
 
-  # splitter:
-  #     image: projecteaina/datapipe:latest
-  #     restart: unless-stopped
-  #     volumes:
-  #       - datapipe-data:/datapipe
-  #     command: "splitter"
-        # deploy:
-        #   mode: replicated
-        #   replicas: 1
-  #     environment:
-  #       - PYTHONUNBUFFERED=1
-  #       - PG_HOST=datapipe-db
-  #       - PG_PASSWORD=${POSTGRES_PASSWORD}
-  #       - CLIPS_PATH= /datapipe/clips
-  #     networks:
-  #       - db-network
-  #     depends_on:
-  #       datapipe-db:
-  #         condition: service_healthy
- 
-  # ona-vosk:
-  #   image: assistent/kaldi-catala:0.0.4
-  #   restart: unless-stopped
-  #   environment:
-  #     - VOSK_SAMPLE_RATE=16000
-  #   networks:
-  #     - ona-vosk-net
-  #   expose:
-  #     - "5001"
+  splitter:
+    image: projecteaina/datapipe:latest
+    restart: unless-stopped
+    command: "splitter"
+    volumes:
+      - datapipe-data:/datapipe
+      - ./audio16:/datapipe/audio16
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PG_HOST=datapipe-db
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - CLIPS_PATH=/datapipe/clips
+    networks:
+      - db-network
+    depends_on:
+      datapipe-db:
+        condition: service_healthy
 
-  # wav2vec2-catala:
-  #   image: ghcr.io/ccoreilly/wav2vec2-catala-onnx:0.1.1
-  #   container_name: wav2vec2-catala
-  #   restart: unless-stopped
-  #   networks:
-  #     - wav2vec2-net
-  #   expose:
-  #     - "8000"
-
-  # wav2vec2-transcriber:
-  #   image: projecteaina/datapipe:latest
-  #   restart: unless-stopped
-  #   volumes:
-  #     - datapipe-data:/datapipe
-  #   command: "wav2vec2_transcriber"
-      # deploy:
-      #   mode: replicated
-      #   replicas: 1
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - PG_HOST=datapipe-db
-  #     - PG_PASSWORD=${POSTGRES_PASSWORD}
-  #     - API_URL=http://wav2vec2-catala/recognize
-  #   networks:
-  #     - db-network
-  #     - wav2vec2-net
-  #   depends_on:
-  #     datapipe-db:
-  #       condition: service_healthy
-
+###############################################################################
+# Named volumes
+###############################################################################
 volumes:
- datapipe-data:
- datapipe-db-data:
- grafana-data:
+  datapipe-data:
+  datapipe-db-data:
+  grafana-data:
 
+###############################################################################
+# Networks
+###############################################################################
 networks:
-  # wav2vec2-net:
-  # ona-vosk-net:
   proxy-net:
-    external: true
+    external: true        # re‑use the existing reverse‑proxy network
   text2lang-net:
   db-network:
-    # driver_opts:
-    #   com.docker.network.driver.mtu: ${NETWORK_MTU}
+  ona-vosk-net:
