@@ -133,6 +133,20 @@ services:
       ona-vosk:
         condition: service_started
 
+  channel-feeder:
+    image: projecteaina/datapipe:latest
+    entrypoint: []
+    command: ["python","-m","channel_feeder"]
+    environment:
+      PG_HOST: datapipe-db
+      PG_DATABASE: ${POSTGRES_DB}
+      PG_USERNAME: ${POSTGRES_USER}
+      PG_PASSWORD: ${POSTGRES_PASSWORD}
+    networks: [db-network]
+    depends_on: [datapipe-db, fetcher]
+    restart: "no"
+
+
   splitter:
     image: projecteaina/datapipe:latest
     restart: unless-stopped          # run continuously
