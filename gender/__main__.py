@@ -1,148 +1,160 @@
-from os import getenv, path, makedirs
+from os import getenv, path, makedirs, rename          # ⬅️ added rename
 import sys
 from joblib import load
 from time import sleep
+import traceback
 
 import numpy as np
+import pandas as pd
 import torch
 from pydub import AudioSegment, effects
 import librosa
 from pyannote.audio import Inference
-import pandas as pd
-import traceback
 
 from db import get_connection
 from utils import GracefulKiller
 
-killer = GracefulKiller()
-
-CLIPS_PATH = getenv("CLIPS_PATH", "./clips")
+# ───────────────────────────────────────────────────────── constants & paths ──
+CLIPS_PATH          = getenv("CLIPS_PATH", "./clips")
+HF_TOKEN            = getenv("HF_TOKEN")
+MFCC_MIN_FREQUENCY  = 60
+MFCC_MAX_FREQUENCY  = 8_000
+MFCC_BANDS          = 80
+EMPTY_VECTOR        = np.full(611, np.nan, dtype=np.float32)
 
 if not path.exists(CLIPS_PATH):
-    print(f"Clips path {CLIPS_PATH} does not exist!")
-    makedirs(path.dirname(CLIPS_PATH), exist_ok=True)
+    print(f"Clips path {CLIPS_PATH} does not exist – creating it.")
+    makedirs(CLIPS_PATH, exist_ok=True)
 
-MFCC_MIN_FREQUENCY = 60
-MFCC_MAX_FREQUENCY = 8_000
-MFCC_BANDS         = 80
+# ─────────────────────────────────────────────── model / helper initialisation ─
+inference = Inference(
+    "pyannote/embedding",
+    window="whole",
+    use_auth_token=HF_TOKEN,
+)
+pipe = load("gender/model.joblib")           # sklearn pipeline
 
-# instantiate pyannote voice embedding
-inference = Inference("pyannote/embedding", window="whole")
-
-# convert pydub audio file to numpy arraay
 def pydub_to_np(audio):
-    return np.array(audio.get_array_of_samples(), dtype=np.float32).reshape((-1, audio.channels)).T
+    return np.array(audio.get_array_of_samples(),
+                    dtype=np.float32).reshape((-1, audio.channels)).T
 
-# convert pydub audio file to pytorch tensor which is needed for pyannote
 def get_tensor_from_audiofile(audio_file):
-    channel_count = audio_file.channels
-    if channel_count==1:
-        samples = audio_file.get_array_of_samples()
-        wv = np.array(samples).astype(np.float32).reshape(-1, len(samples))
-        wv /= np.iinfo(samples.typecode).max
-        wv_tensor = torch.tensor(wv)
-    elif channel_count==2:
-        channels = audio_file.split_to_mono()
-        samples = [s.get_array_of_samples() for s in channels]
-        wv = np.array(samples).astype(np.float32)
-        wv = wv.mean(axis=0)
-        wv = wv.reshape(-1, len(wv))
-        wv /= np.iinfo(samples[0].typecode).max
-        wv_tensor = torch.tensor(wv)
-    return wv_tensor
+    chans = audio_file.channels
+    if chans == 1:
+        arr = np.array(audio_file.get_array_of_samples(), np.float32)
+        arr = arr.reshape(-1, arr.size)
+    else:  # stereo → mono
+        mono = np.mean([np.array(ch.get_array_of_samples(), np.float32)
+                        for ch in audio_file.split_to_mono()], axis=0)
+        arr = mono.reshape(-1, mono.size)
+    arr /= np.iinfo(audio_file.array_type).max
+    return torch.tensor(arr)
 
-# load and preprocess audio file, extract features with librosa and pyannote
-def get_features(file):
-    # create empty array to return in case processing fails
-    empty_ = np.empty(611,)
-    empty_[:] = np.nan 
-    
+def get_features(wav_path: str) -> np.ndarray:
+    """Return 611‑D feature vector or EMPTY_VECTOR on any failure."""
     try:
-        audio_file = AudioSegment.from_file(file)
-    except Exception as e:
-        print(e)
-        print(f"{file} can't be loaded")
-        return empty_  
-        
-    sample_rate = audio_file.frame_rate
+        audio = AudioSegment.from_file(wav_path)
+    except Exception:
+        print(f"[⚠] {wav_path} can't be loaded.")
+        return EMPTY_VECTOR
 
-    # normalize audio levels
     try:
-        audio_file = effects.normalize(audio_file)  
-    except Exception as e:
-        print(f"{file} can't be normalized")
-        return empty_  
+        audio = effects.normalize(audio)
+    except Exception:
+        print(f"[⚠] {wav_path} can't be normalized.")
+        return EMPTY_VECTOR
 
-    waveform = pydub_to_np(audio_file)
-       
-    if waveform.ndim == 2: # check if file is stereo 
-        waveform = waveform.mean(axis=0) # if stereo merge channels by averaging
+    if audio.duration_seconds < 0.5:
+        return EMPTY_VECTOR
 
-    if len(waveform)>0:
-        # extract MFCCs
-        mfcc_ = np.mean(librosa.feature.mfcc(y=waveform, 
-                                             sr=sample_rate, 
-                                             n_mfcc=MFCC_BANDS, 
-                                             fmin=MFCC_MIN_FREQUENCY,
-                                             fmax=MFCC_MAX_FREQUENCY,
-                                            ), axis=1) 
+    waveform = pydub_to_np(audio)
+    if waveform.ndim == 2:
+        waveform = waveform.mean(axis=0)
 
-        # extract chromagram and contrast
-        stft_ = np.abs(librosa.stft(waveform))
-        chroma_ = np.mean(librosa.feature.chroma_stft(S=stft_, sr=sample_rate).T, axis=0)
-        contrast_ = np.mean(librosa.feature.spectral_contrast(S=stft_, sr=sample_rate).T, axis=0)
-        
-        # return empty if audio is less than 0.5 seconds after removing silence at beginning and end
-        # embedding doesn't work on very short audio fragments
-        if audio_file.duration_seconds < 0.5:
-            return empty_
-        
-        # get embedding from pyannote
-        waveform_tensor = get_tensor_from_audiofile(audio_file)
-        embedding_ = inference({"waveform": waveform_tensor, "sample_rate":sample_rate})
-        
-        return np.hstack([mfcc_, chroma_, contrast_, embedding_])
-                         
-    else:
-        return empty_
+    sr = audio.frame_rate
+    mfcc = np.mean(librosa.feature.mfcc(
+        y=waveform, sr=sr, n_mfcc=MFCC_BANDS,
+        fmin=MFCC_MIN_FREQUENCY, fmax=MFCC_MAX_FREQUENCY), axis=1)
 
-pipe = load('gender/model.joblib')
+    stft = np.abs(librosa.stft(waveform))
+    chroma   = np.mean(librosa.feature.chroma_stft(S=stft, sr=sr).T, axis=0)
+    contrast = np.mean(librosa.feature.spectral_contrast(S=stft, sr=sr).T, axis=0)
 
-conn = get_connection()
+    emb = inference({"waveform": get_tensor_from_audiofile(audio),
+                     "sample_rate": sr})
 
-cur = conn.cursor()
+    return np.hstack([mfcc, chroma, contrast, emb])
 
-print("Starting")
+def features_ok(vec: np.ndarray) -> bool:
+    return vec.size and np.isfinite(vec).all()
+
+# ─────────────────────────────────────────────────────────────────── DB setup ──
+killer = GracefulKiller()
+conn   = get_connection()
+cur    = conn.cursor()
+
+print("✓ gender service started")
+QUERY_WORK = """
+    SELECT c.clip_id, c.filepath
+    FROM   clips c
+    WHERE  c.filepath IS NOT NULL
+      AND  c.clip_id NOT IN (SELECT clip_id
+                             FROM genders
+                             WHERE origin != 'model')
+    ORDER BY random()
+    LIMIT 1;
+"""
+INSERT_RESULT = """
+    INSERT INTO genders (gender, origin, clip_id)
+    VALUES (%s, %s, %s);
+"""
+
+# ───────────────────────────────────────────────────────────── main loop ──
 while not killer.kill_now:
-    cur.execute("\
-        SELECT c.clip_id, c.filepath \
-        FROM clips c \
-        WHERE c.filepath IS NOT null and clip_id not in ( \
-            select clip_id from genders where origin != 'model') \
-        ORDER BY random() \
-        LIMIT 1;")
+    cur.execute(QUERY_WORK)
     conn.commit()
-    clip = cur.fetchone()
-    
-    if clip:
-        clip_id, filepath = clip
-        try:
-            feat = pd.DataFrame([get_features(filepath)])
-            prediction = pipe.predict(feat)[0]
-            cur.execute('INSERT INTO genders (gender, origin, clip_id) VALUES (%s, %s, %s) RETURNING gender_id;', (prediction, "model", clip_id))
-            conn.commit()
-        except KeyboardInterrupt:
-            print("Stopping")
-            break
-        except Exception as ex:
-            print(f"Preprocessing failed")
-            traceback.print_exc()
-    else:
-        try:
-            print("No work, sleeping for 10s...")
-            sleep(10)
-        except KeyboardInterrupt:
-            break
+    row = cur.fetchone()
 
+    if not row:
+        print("No work, sleeping 10 s …")
+        sleep(10)
+        continue
+
+    clip_id, wav_path = row
+    try:
+        feat_vec = get_features(wav_path)
+        if not features_ok(feat_vec):
+            raise ValueError("invalid/NaN feature vector")
+
+        gender_pred = pipe.predict(pd.DataFrame([feat_vec]))[0]
+
+        # 1) store in DB
+        cur.execute(INSERT_RESULT, (gender_pred, "model", clip_id))
+        conn.commit()
+
+        # 2) ONE‑TIME rename on disk
+        dir_, base = path.split(wav_path)
+        stem, ext  = path.splitext(base)
+        if "_" not in stem:                 # not renamed yet
+            new_base = f"{stem}_{gender_pred}{ext}"
+            new_path = path.join(dir_, new_base)
+            try:
+                rename(wav_path, new_path)
+                print(f"✓ clip {clip_id} → {gender_pred}  (saved as {new_base})")
+            except FileNotFoundError:
+                print(f"⚠ clip {clip_id}: file vanished before rename")
+        else:
+            print(f"✓ clip {clip_id} → {gender_pred}")
+
+    except (FileNotFoundError, ValueError) as skip:
+        print(f"⚠ skipping clip {clip_id}: {skip}")
+        cur.execute(INSERT_RESULT, ("unknown", "error", clip_id))
+        conn.commit()
+
+    except Exception:
+        print(f"‼ preprocessing failed for clip {clip_id}")
+        traceback.print_exc()
+
+print("Stopping gracefully …")
 cur.close()
 conn.close()

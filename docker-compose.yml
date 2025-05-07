@@ -12,10 +12,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    expose:
-      - "5432"
-    networks:
-      - db-network
+    expose: ["5432"]
+    networks: [db-network]
     volumes:
       - ./k8s/postgresql/sql/tables.sql:/docker-entrypoint-initdb.d/db.sql
       - datapipe-db-data:/var/lib/postgresql/data
@@ -33,11 +31,8 @@ services:
       - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
       - GF_LOG_MODE=console
       - GF_LOG_LEVEL=info
-    networks:
-      - proxy-net
-      - db-network
-    expose:
-      - "3000"
+    networks: [proxy-net, db-network]
+    expose: ["3000"]
     volumes:
       - grafana-data:/var/lib/grafana
 
@@ -45,10 +40,8 @@ services:
     image: projecteaina/text2lang:latest
     container_name: datapipe-text2lang
     restart: unless-stopped
-    networks:
-      - text2lang-net
-    expose:
-      - "8000"
+    networks: [text2lang-net]
+    expose: ["8000"]
 
   preprocessor:
     image: projecteaina/datapipe:latest
@@ -56,18 +49,14 @@ services:
     command: "preprocessor"
     volumes:
       - datapipe-data:/datapipe
-    deploy:
-      mode: replicated
-      replicas: 1
+    deploy: {mode: replicated, replicas: 1}
     environment:
       - PYTHONUNBUFFERED=1
       - PG_HOST=datapipe-db
       - PG_PASSWORD=${POSTGRES_PASSWORD}
       - API_URL=http://text2lang:8000/text2lang
       - SKIP_LICENSE_CHECK=${SKIP_LICENSE_CHECK}
-    networks:
-      - db-network
-      - text2lang-net
+    networks: [db-network, text2lang-net]
     depends_on:
       datapipe-db:
         condition: service_healthy
@@ -78,9 +67,7 @@ services:
     command: "fetcher"
     volumes:
       - datapipe-data:/datapipe
-    deploy:
-      mode: replicated
-      replicas: 2
+    deploy: {mode: replicated, replicas: 2}
     environment:
       - PYTHONUNBUFFERED=1
       - PG_HOST=datapipe-db
@@ -90,22 +77,17 @@ services:
       - CCMA_AUDIO_DOWNLOAD_PATH=/datapipe/audio/ccma
       - CCMA_VIDEO_DOWNLOAD_PATH=/datapipe/tmp/video/ccma
       - CCMA_CAPTION_DOWNLOAD_PATH=/datapipe/caption/ccma
-    networks:
-      - db-network
+    networks: [db-network]
     depends_on:
       datapipe-db:
         condition: service_healthy
 
+  # keep your locally‑built converter exactly as you had it
   converter:
-    # replace or comment‑out the existing image line 👇
-    # image: projecteaina/datapipe:latest
-
-    # point Compose at your local Dockerfile
     build:
-      context: .          # repository root (contains Dockerfile)
+      context: .
       dockerfile: Dockerfile
-    image: datapipe-converter:local   # give the image a new tag
-
+    # image: datapipe-converter:local   ← remove this line
     command: "converter"
     volumes:
       - datapipe-data:/datapipe
@@ -117,8 +99,7 @@ services:
       - CCMA_AUDIO_DOWNLOAD_PATH=/datapipe/audio/ccma
       - CCMA_VIDEO_DOWNLOAD_PATH=/datapipe/tmp/video/ccma
       - PG_PASSWORD=${POSTGRES_PASSWORD}
-    networks:
-      - db-network
+    networks: [db-network]
     depends_on:
       datapipe-db:
         condition: service_healthy
@@ -128,10 +109,8 @@ services:
     restart: unless-stopped
     environment:
       - VOSK_SAMPLE_RATE=16000
-    expose:
-      - "5001"
-    networks:
-      - ona-vosk-net
+    expose: ["5001"]
+    networks: [ona-vosk-net]
 
   vad-transcriber:
     image: projecteaina/datapipe:latest
@@ -140,18 +119,14 @@ services:
     volumes:
       - datapipe-data:/datapipe
       - ./audio16:/datapipe/audio16
-    deploy:
-      mode: replicated
-      replicas: 1
+    deploy: {mode: replicated, replicas: 1}
     environment:
       - PYTHONUNBUFFERED=1
       - PG_HOST=datapipe-db
       - PG_PASSWORD=${POSTGRES_PASSWORD}
       - VOSK_SERVER_HOST=ona-vosk
       - VOSK_SERVER_PORT=5001
-    networks:
-      - db-network
-      - ona-vosk-net
+    networks: [db-network, ona-vosk-net]
     depends_on:
       datapipe-db:
         condition: service_healthy
@@ -160,19 +135,39 @@ services:
 
   splitter:
     image: projecteaina/datapipe:latest
-    restart: unless-stopped
-    command: "splitter"
+    restart: unless-stopped          # run continuously
+    command: "splitter"              # <- NO --one-shot
     volumes:
-      - datapipe-data:/datapipe
+      - datapipe-data:/datapipe      # single shared volume; no bind‑mount
       - ./audio16:/datapipe/audio16
     environment:
       - PYTHONUNBUFFERED=1
       - PG_HOST=datapipe-db
       - PG_PASSWORD=${POSTGRES_PASSWORD}
       - CLIPS_PATH=/datapipe/clips
-    networks:
-      - db-network
+    networks: [db-network]
     depends_on:
+      datapipe-db:
+        condition: service_healthy
+
+  gender:
+    build:
+      context: .            # uses the repo’s Dockerfile
+      dockerfile: Dockerfile
+    image: datapipe-gender:local   # any tag that isn’t on Docker Hub
+    command: "gender"
+    env_file: .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PG_HOST=datapipe-db
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - CLIPS_PATH=/datapipe/clips
+    volumes:
+      - datapipe-data:/datapipe
+    networks: [db-network]
+    depends_on:
+      splitter:
+        condition: service_started
       datapipe-db:
         condition: service_healthy
 
@@ -189,7 +184,7 @@ volumes:
 ###############################################################################
 networks:
   proxy-net:
-    external: true        # re‑use the existing reverse‑proxy network
+    external: true
   text2lang-net:
   db-network:
   ona-vosk-net:
