@@ -36,16 +36,23 @@ def list_ids(url: str, cookies: Optional[str] = None):
 
 def finished(conn, vid: str) -> bool:
     """
-    Return True when *all* clips for this video have exported = TRUE.
-    (exported is a boolean, no enum casting problems.)
+    Return True once *every* clip for source_id=vid has been transcribed.
     """
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT COUNT(*) FROM clips "
-            "WHERE source_id::text = %s "
-            "  AND (exported IS DISTINCT FROM TRUE);",
+            """
+            SELECT COUNT(*)
+              FROM clips AS c
+              WHERE c.source_id::text = %s
+                AND NOT EXISTS (
+                      SELECT 1
+                        FROM transcripts AS t
+                       WHERE t.clip_id = c.clip_id
+                   )
+            """,
             (vid,),
         )
+        # If zero clips lack a transcript, we're finished.
         return cur.fetchone()[0] == 0
 
 # ────────────────────────── main ───────────────────────────────────────────
