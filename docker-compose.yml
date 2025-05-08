@@ -196,6 +196,7 @@ services:
         condition: service_started
       datapipe-db:
         condition: service_healthy
+    restart: unless-stopped
 
 ###############################################################################
 # Named volumes
