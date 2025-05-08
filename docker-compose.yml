@@ -187,7 +187,6 @@ services:
       dockerfile: Dockerfile
     image: datapipe-gender:local   # any tag that isn’t on Docker Hub
     command: "gender"
-    env_file: .env
     environment:
       - PYTHONUNBUFFERED=1
       - PG_HOST=datapipe-db
