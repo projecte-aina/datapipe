@@ -162,44 +162,40 @@ services:
       datapipe-db:
         condition: service_healthy
 
-  # tsv-exporter:
-  #   build: .
-  #   image: projecteaina/datapipe:latest   # re‑use the same image
-  #   restart: unless-stopped
-  #   command: "tsv_exporter"               # entrypoint -> our __main__.py
-  #   volumes:
-  #     - datapipe-data:/datapipe           # same shared volume
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - PG_HOST=datapipe-db
-  #     - PG_PASSWORD=${POSTGRES_PASSWORD}
-  #     - TSV_PATH=/datapipe/dataset.tsv
-  #     - PREFERRED_TRANSCRIBER=wav2vec2    # or vosk_vad if you prefer
-  #   depends_on:
-  #     datapipe-db:
-  #       condition: service_healthy        # let Compose wait for DB
-  #   networks:
-  #     - db-network
+  tsv-exporter:
+    image: projecteaina/datapipe:latest   # re‑use the same image
+    restart: unless-stopped
+    command: "tsv_exporter"               # entrypoint -> our __main__.py
+    volumes:
+      - datapipe-data:/datapipe           # same shared volume
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PG_HOST=datapipe-db
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - TSV_PATH=/datapipe/dataset.tsv
+      - PREFERRED_TRANSCRIBER=wav2vec2    # or vosk_vad if you prefer
+    depends_on:
+      datapipe-db:
+        condition: service_healthy        # let Compose wait for DB
+    networks:
+      - db-network
 
-  # gender:
-  #   build:
-  #     context: .            # uses the repo’s Dockerfile
-  #     dockerfile: Dockerfile
-  #   image: datapipe-gender:local   # any tag that isn’t on Docker Hub
-  #   command: "gender"
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - PG_HOST=datapipe-db
-  #     - PG_PASSWORD=${POSTGRES_PASSWORD}
-  #     - CLIPS_PATH=/datapipe/clips
-  #   volumes:
-  #     - datapipe-data:/datapipe
-  #   networks: [db-network]
-  #   depends_on:
-  #     splitter:
-  #       condition: service_started
-  #     datapipe-db:
-  #       condition: service_healthy
+  gender:
+    image: projecteaina/datapipe:latest
+    command: "gender"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PG_HOST=datapipe-db
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - CLIPS_PATH=/datapipe/clips
+    volumes:
+      - datapipe-data:/datapipe
+    networks: [db-network]
+    depends_on:
+      splitter:
+        condition: service_started
+      datapipe-db:
+        condition: service_healthy
 
 ###############################################################################
 # Named volumes
@@ -216,5 +212,11 @@ networks:
   proxy-net:
     external: true
   text2lang-net:
+    driver_opts:
+      com.docker.network.driver.mtu: ${NETWORK_MTU-1442}
   db-network:
+    driver_opts:
+      com.docker.network.driver.mtu: ${NETWORK_MTU-1442}
   ona-vosk-net:
+    driver_opts:
+      com.docker.network.driver.mtu: ${NETWORK_MTU-1442}
