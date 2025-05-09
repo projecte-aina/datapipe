@@ -12,8 +12,7 @@ killer = GracefulKiller()
 
 # ---------- Paths ----------
 AUDIO_16_PATH = getenv("AUDIO_16_PATH", "./audio16")
-CCMA_AUDIO_DOWNLOAD_PATH = getenv(
-    "CCMA_AUDIO_DOWNLOAD_PATH", "./audio/ccma")
+CCMA_AUDIO_DOWNLOAD_PATH = getenv("CCMA_AUDIO_DOWNLOAD_PATH", "./audio/ccma")
 
 if not path.exists(AUDIO_16_PATH):
     makedirs(AUDIO_16_PATH)
@@ -41,8 +40,7 @@ def get_duration_and_sr(audiopath: str):
 
 def convert(source_id: str, audiopath: str):
     """
-    Down‑sample *audiopath* to 16 kHz mono WAV.
-
+    Down‑sample *audiopath* to 16 kHz mono WAV.
     Returns (sample_rate, duration, converted_path).
     """
     print(f"YT: Converting {audiopath}")
@@ -57,8 +55,8 @@ def convert(source_id: str, audiopath: str):
             [
                 "ffmpeg", "-y",
                 "-i", audiopath,
-                "-ac", "1",                 # mono
-                "-ar", "16000",             # 16 kHz
+                "-ac", "1",
+                "-ar", "16000",
                 "-f", "wav", converted_path
             ],
             capture_output=True,
@@ -66,7 +64,7 @@ def convert(source_id: str, audiopath: str):
         if result.returncode != 0:
             raise RuntimeError(result.stderr.decode())
 
-        # probe the converted file – that is what matters downstream
+        # probe the converted file – that is what matters downstream
         sr, duration = get_duration_and_sr(converted_path)
         return sr, duration, converted_path
 
@@ -78,7 +76,7 @@ def convert(source_id: str, audiopath: str):
 
 def ccma_convert(source_id: str, audiopath: str):
     """
-    CCMA items are already 16 kHz mono AAC. We keep them in MP4
+    CCMA items are already 16 kHz mono AAC. We keep them in MP4
     and write the path to `sources.audiopath_16` for consistency.
     """
     print(f"CCMA: Converting {audiopath}")
@@ -102,7 +100,6 @@ def ccma_convert(source_id: str, audiopath: str):
         if path.isfile(converted_path):
             remove(converted_path)
         raise
-
 
 # ---------- Main worker loop ----------
 conn = get_connection()
@@ -134,7 +131,7 @@ while not killer.kill_now:
     row = cur.fetchone()
     if not row:
         try:
-            print("No work, sleeping for 10 s …")
+            print("No work, sleeping for 10 s …")
             sleep(10)
         except KeyboardInterrupt:
             break
@@ -159,6 +156,10 @@ while not killer.kill_now:
                 (sr, duration, converted, source_id),
             )
             print(f"YT: Converting succeeded ({converted})")
+            # delete the original video.wav after conversion
+            if path.isfile(audiopath):
+                remove(audiopath)
+                print(f"Removed original file: {audiopath}")
 
         # ---------- CCMA ----------
         elif source_type == "ccma":
@@ -179,7 +180,7 @@ while not killer.kill_now:
             print("CCMA: Converting succeeded")
 
         else:
-            print(f"Unknown source type '{source_type}' – skipping")
+            print(f"Unknown source type '{source_type}' – skipping")
 
     except KeyboardInterrupt:
         print("Stopping gracefully")
@@ -196,7 +197,7 @@ while not killer.kill_now:
         break
 
     except Exception:
-        print("Converting failed – will retry")
+        print("Converting failed – will retry")
         traceback.print_exc()
         cur.execute(
             """
