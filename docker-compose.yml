@@ -157,6 +157,7 @@ services:
       - PG_HOST=datapipe-db
       - PG_PASSWORD=${POSTGRES_PASSWORD}
       - CLIPS_PATH=/datapipe/clips
+      - AUDIO_16_PATH=/datapipe/audio16
     networks: [db-network]
     depends_on:
       datapipe-db:
