@@ -1,7 +1,7 @@
 import os
 import shutil
 import uuid
-from os import getenv, path, remove, makedirs
+from os import getenv, path, makedirs
 from urllib.error import HTTPError
 from time import sleep
 
@@ -53,7 +53,7 @@ def youtube_download_audio(yt, source_id):
     filesize = stream.filesize
     stream.download(YT_AUDIO_DOWNLOAD_PATH, filename, None)
     if filesize != path.getsize(filepath):
-        remove(filepath)
+        os.remove(filepath)
         raise FilesizeNotMatching
     return filepath
 
@@ -219,10 +219,10 @@ while not killer.kill_now:
 
     finally:
         conn.commit()
-        # Clean up one-time local file after processing
-        if local_detected and path.isfile(local_wav):
-            remove(local_wav)
-            print(f"Removed local WAV: {local_wav}")
+        # NOTE: Removed removal of local WAV to preserve the file after processing
+        # if local_detected and path.isfile(local_wav):
+        #     os.remove(local_wav)
+        #     print(f"Removed local WAV: {local_wav}")
 
 cur.close()
 conn.close()
