@@ -1,5 +1,3 @@
-version: "3.9"
-
 ###############################################################################
 # Services
 ###############################################################################
@@ -165,7 +163,6 @@ services:
         condition: service_healthy
 
   tsv-exporter:
-    build: .
     image: projecteaina/datapipe:latest   # re‑use the same image
     restart: unless-stopped
     command: "tsv_exporter"               # entrypoint -> our __main__.py
@@ -184,17 +181,15 @@ services:
       - db-network
 
   gender:
-    build:
-      context: .            # uses the repo’s Dockerfile
-      dockerfile: Dockerfile
-    image: datapipe-gender:local   # any tag that isn’t on Docker Hub
+    image: projecteaina/datapipe:latest
     command: "gender"
-    env_file: .env
     environment:
       - PYTHONUNBUFFERED=1
       - PG_HOST=datapipe-db
       - PG_PASSWORD=${POSTGRES_PASSWORD}
       - CLIPS_PATH=/datapipe/clips
+      - HF_TOKEN=${HF_TOKEN}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
     volumes:
       - datapipe-data:/datapipe
     networks: [db-network]
@@ -203,6 +198,7 @@ services:
         condition: service_started
       datapipe-db:
         condition: service_healthy
+    restart: unless-stopped
 
 ###############################################################################
 # Named volumes
@@ -219,5 +215,11 @@ networks:
   proxy-net:
     external: true
   text2lang-net:
+    driver_opts:
+      com.docker.network.driver.mtu: ${NETWORK_MTU-1442}
   db-network:
+    driver_opts:
+      com.docker.network.driver.mtu: ${NETWORK_MTU-1442}
   ona-vosk-net:
+    driver_opts:
+      com.docker.network.driver.mtu: ${NETWORK_MTU-1442}
